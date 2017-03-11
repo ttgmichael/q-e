@@ -10154,9 +10154,10 @@ $as_echo "${elpa_libs}" >&6; }
 # Setting BEEF...
 
 
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking BEEF" >&5
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking BEEF" >&5
 $as_echo_n "checking BEEF... " >&6; }
 
+beef_libs=$BEEF_LIBS
 
 # Check whether --enable-libbeef was given.
 if test "${enable_libbeef+set}" = set; then :

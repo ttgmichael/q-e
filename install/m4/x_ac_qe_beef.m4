@@ -2,8 +2,9 @@
 
 AC_DEFUN([X_AC_QE_BEEF], [
 
-  AC_MSG_CHECKING([BEEF])
- 
+AC_MSG_CHECKING([BEEF])
+
+beef_libs=$BEEF_LIBS
 
 AC_ARG_ENABLE(libbeef,
    [AS_HELP_STRING([--enable-libbeef],

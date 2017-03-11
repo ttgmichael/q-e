@@ -1046,10 +1046,10 @@ CONTAINS
      shortname = 'SOGGA'
   else if (iexch==1.and.icorr==4.and.igcx==25.and.igcc==0) then
      shortname = 'EV93'
-  else if (iexch_==1.and.icorr_==4.and.igcx_==29.and.igcc_==14.and.inlc_==2) then
-     shortname_ = 'BEEF'
-  else if (iexch_==1.and.icorr_==4.and.igcx_==30.and.igcc_==4) then
-     shortname_ = 'RPBE'
+  else if (iexch==1.and.icorr==4.and.igcx==29.and.igcc==14.and.inlc==2) then
+     shortname = 'BEEF'
+  else if (iexch==1.and.icorr==4.and.igcx==30.and.igcc==4) then
+     shortname = 'RPBE'
   end if
 
   if (imeta == 1 ) then
@@ -2254,7 +2254,7 @@ subroutine gcx_spin_vec(rhoup, rhodw, grhoup2, grhodw2, &
      v2xdw = 2.0_DP * v2xdw
 
 #ifdef use_beef
-  case(30) ! beefx
+  case(29) ! beefx
      do i=1,length
         if (rhoup(i) > small .and. sqrt(abs(grhoup2(i))) > small) then
            call beefx(2.0_DP * rhoup(i), 4.0_DP * grhoup2(i), sxup(i), v1xup(i), v2xup(i), 0)
