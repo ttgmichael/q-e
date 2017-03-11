@@ -2051,7 +2051,21 @@ input_description -distribution {Quantum Espresso} -package PWscf -program pw.x 
 		    dynamics for structural relaxation
 		    Can be used for constrained 
 		    optimisation: see @ref CONSTRAINTS card
-		}		
+		}
+		opt -val 'ase3' {
+		    use external script to control
+		    ion dynamics based on force output from pw.x
+		    Can be used for constrained 
+		    optimisation: see @ref CONSTRAINTS card
+		    Mainly for use with the ASE interface
+		    at https://github.com/vossjo/ase-espresso
+		    But can also be used to directly move ions
+		    from the shell or command line, e.g.:
+		    echo -e "G\n0.1d0 0d0 0d0\n0.7d0 0d0 0d0\nG\n0.2d0 0d0 0d0\n0.6d0 0d0 0d0\nQ" | pw.x -in pw.in
+		    will move the positions of two ions with initial
+		    with initial positions in pw.in to two further
+		    positions ('Q' to terminate pw.x)
+		}
 		info {
 		    @b CASE ( @ref calculation == 'md' )
 		}
