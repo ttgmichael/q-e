@@ -662,10 +662,9 @@ MODULE input_parameters
 
         CHARACTER(len=80) :: electron_dynamics = 'none'
           ! set how electrons should be moved
-        CHARACTER(len=80) :: electron_dynamics_allowed(8)
+        CHARACTER(len=80) :: electron_dynamics_allowed(7)
         DATA electron_dynamics_allowed &
-          / 'default', 'sd', 'cg', 'damp', 'verlet', 'none', 'cp-bo',&
-            'ase3' /
+          / 'default', 'sd', 'cg', 'damp', 'verlet', 'none', 'cp-bo' /
 
         REAL(DP) :: electron_damping = 0.0_DP
           ! meaningful only if " electron_dynamics = 'damp' "
@@ -993,10 +992,10 @@ MODULE input_parameters
 
         CHARACTER(len=80) :: ion_dynamics = 'none'
           ! set how ions should be moved
-        CHARACTER(len=80) :: ion_dynamics_allowed(9)
+        CHARACTER(len=80) :: ion_dynamics_allowed(10)
         DATA ion_dynamics_allowed / 'none', 'sd', 'cg', 'langevin', &
                                     'damp', 'verlet', 'bfgs', 'beeman',& 
-                                    'langevin-smc' /
+                                    'langevin-smc', 'ase3' /
 
         REAL(DP) :: ion_radius(nsx) = 0.5_DP
           ! pseudo-atomic radius of the i-th atomic species (CP only)

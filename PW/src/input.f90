@@ -366,7 +366,7 @@ SUBROUTINE iosys()
         !
         ntcheck = nstep + 1
         !
-     CASE ( 'lase3' )
+     CASE ( 'ase3' )
         !
         lase3 = .true.
         !
