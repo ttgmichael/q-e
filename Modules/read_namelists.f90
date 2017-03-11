@@ -128,6 +128,8 @@ MODULE read_namelists_module
        saverho = .TRUE.
        memory = 'default'
        !
+       ase_fifo = .FALSE.
+       !
        lfcpopt = .FALSE.
        lfcpdyn = .FALSE.
        !
@@ -189,6 +191,8 @@ MODULE read_namelists_module
        qcutz   = 0.0_DP
        q2sigma = 0.01_DP
        input_dft = 'none'
+       ensemble_energies = .FALSE.
+       print_ensemble_energies = .TRUE.
        ecutfock  = -1.0_DP
 !
 ! ... set starting_magnetization to an invalid value:
@@ -718,6 +722,7 @@ MODULE read_namelists_module
        CALL mp_bcast( tqmmm,         ionode_id, intra_image_comm )
        CALL mp_bcast( vdw_table_name,ionode_id, intra_image_comm )
        CALL mp_bcast( memory,        ionode_id, intra_image_comm )
+       CALL mp_bcast( ase_fifo,      ionode_id, intra_image_comm )
        CALL mp_bcast( lfcpopt,       ionode_id, intra_image_comm )
        CALL mp_bcast( lfcpdyn,       ionode_id, intra_image_comm )
        CALL mp_bcast( input_xml_schema_file, ionode_id, intra_image_comm )
@@ -780,6 +785,8 @@ MODULE read_namelists_module
        CALL mp_bcast( qcutz,             ionode_id, intra_image_comm )
        CALL mp_bcast( q2sigma,           ionode_id, intra_image_comm )
        CALL mp_bcast( input_dft,         ionode_id, intra_image_comm )
+       CALL mp_bcast( ensemble_energies, ionode_id , intra_image_comm)
+       CALL mp_bcast( print_ensemble_energies, ionode_id , intra_image_comm)
        CALL mp_bcast( nqx1,                   ionode_id, intra_image_comm )
        CALL mp_bcast( nqx2,                   ionode_id, intra_image_comm )
        CALL mp_bcast( nqx3,                   ionode_id, intra_image_comm )

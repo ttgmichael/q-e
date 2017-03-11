@@ -38,7 +38,8 @@ SUBROUTINE move_ions ( idone )
   USE ener,                   ONLY : etot, ef
   USE force_mod,              ONLY : force, sigma
   USE control_flags,          ONLY : istep, nstep, upscale, lbfgs, &
-                                     lconstrain, conv_ions, lmd, tr2
+                                     lconstrain, conv_ions, lmd, tr2, &
+                                     lase3
   USE basis,                  ONLY : starting_wfc
   USE relax,                  ONLY : epse, epsf, epsp, starting_scf_threshold
   USE lsda_mod,               ONLY : lsda, absmag
@@ -293,11 +294,16 @@ SUBROUTINE move_ions ( idone )
         END IF
         !
      END IF
+     IF (lase3) THEN
+        CALL aseprint(nat, tau, force)
+        CALL aseread(nat, tau, conv_ions)
+     ELSE
      !
      ! ... before leaving check that the new positions still transform
      ! ... according to the symmetry of the system.
      !
-     CALL checkallsym( nat, tau, ityp)
+        CALL checkallsym( nat, tau, ityp)
+     END IF
      !
   END IF
 
@@ -397,6 +403,70 @@ SUBROUTINE move_ions ( idone )
 9110 FORMAT( /5X,'A final scf calculation at the relaxed structure.' )
 9120 FORMAT(  5X,'The G-vectors are recalculated for the final unit cell'/ &
               5X,'Results may differ from those at the preceding step.' )
+  !
+  !
+  !
+  CONTAINS
+  !
+  ! aseprint writes coordinates and forces to standard output
+  ! which are then read by scripts via pipes.
+  !
+  SUBROUTINE aseprint(n, p, f)
+    USE kinds,                  ONLY : DP
+    REAL(DP) :: p(3,n), f(3,n)
+    INTEGER :: n, i
+  
+    WRITE (*,*) "!ASE"
+    DO i=1,n
+      WRITE(*, "(3E35.15)") p(1,i),p(2,i),p(3,i)
+    ENDDO
+    DO i=1,n
+      WRITE(*, "(3E35.15)") f(1,i),f(2,i),f(3,i)
+    ENDDO
+  END SUBROUTINE aseprint
+  !
+  ! aseread waits for new coordinates to be provided by
+  ! a script through standard input (or a fifo if ase3_fifo is .true.).
+  ! If 'Q' is sent instead of coordinates,
+  ! pw.x will exit cleanly.
+  !
+  SUBROUTINE aseread(n, p, conv)
+    USE kinds,                  ONLY : DP
+    USE input_parameters,       ONLY : ase_fifo
+    INTEGER, EXTERNAL :: find_free_unit
+    INTEGER, ALLOCATABLE, SAVE :: fifo(:)
+    REAL(DP) :: p(3,n)
+    INTEGER :: n, i
+    LOGICAL :: conv
+    CHARACTER :: c
+  
+    IF(.NOT. ase_fifo) THEN
+      READ(*,*) c
+      IF(c.ne.'Q') THEN
+        DO i=1,n
+          READ(*,*) p(1,i),p(2,i),p(3,i)
+        ENDDO
+      ELSE
+        conv = .TRUE.
+      END IF
+    ELSE
+      IF(.NOT. ALLOCATED(fifo)) THEN
+        ALLOCATE(fifo(1))
+        fifo(1) = find_free_unit()
+        OPEN(UNIT=fifo(1), FILE='ase3inpfifo', ACTION='READ')
+      END IF
+      READ(fifo(1),*) c
+      IF(c.ne.'Q') THEN
+        DO i=1,n
+          READ(fifo(1),*) p(1,i),p(2,i),p(3,i)
+        ENDDO
+      ELSE
+        conv = .TRUE.
+        CLOSE(fifo(1))
+        DEALLOCATE(fifo)
+      END IF
+    END IF
+  END SUBROUTINE aseread
   !
 END SUBROUTINE move_ions
 !

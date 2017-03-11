@@ -353,6 +353,12 @@ CONTAINS
     CASE ( 'emaxpos' ) 
        CALL iotk_scan_dat_inside( xmlinputunit, emaxpos, ierr = ierr )
        !
+    CASE ( 'ensemble_energies' ) 
+       CALL iotk_scan_dat_inside( xmlinputunit, ensemble_energies, ierr = ierr )
+       !
+    CASE ( 'print_ensemble_energies' ) 
+       CALL iotk_scan_dat_inside( xmlinputunit, print_ensemble_energies, ierr = ierr )
+       !
     CASE ( 'eopreg' ) 
        CALL iotk_scan_dat_inside( xmlinputunit, eopreg, ierr = ierr )
        !

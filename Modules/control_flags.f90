@@ -157,6 +157,7 @@ MODULE control_flags
     !=================================================================
     lbands  =.FALSE., &! if .TRUE. the calc. is band structure
     lconstrain=.FALSE.,&! if .TRUE. the calc. is constraint
+    lase3   =.FALSE., & ! if .TRUE. ionic updates are controlled by an ase3 python script
     llondon =.FALSE., & ! if .TRUE. compute Grimme D2 dispersion corrections
     ts_vdw  =.FALSE., & ! as above for Tkatchenko-Scheffler disp.corrections
     lxdm    =.FALSE., & ! if .TRUE. compute XDM dispersion corrections
