@@ -164,6 +164,7 @@ SUBROUTINE iosys()
                             io_level, ethr, lscf, lbfgs, lmd, &
                             lbands, lconstrain, restart, twfcollect, &
                             llondon, do_makov_payne, lxdm, &
+                            lase3, &
                             ts_vdw_           => ts_vdw, &
                             lecrpa_           => lecrpa, &
                             smallmem
@@ -364,6 +365,10 @@ SUBROUTINE iosys()
         calc    = 'vm'
         !
         ntcheck = nstep + 1
+        !
+     CASE ( 'ase3' )
+        !
+        lase3 = .true.
         !
      CASE DEFAULT
         !

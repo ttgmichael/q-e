@@ -39,6 +39,7 @@ SUBROUTINE run_pwscf ( exit_status )
   USE control_flags,    ONLY : conv_elec, gamma_only, ethr, lscf, twfcollect
   USE control_flags,    ONLY : conv_ions, istep, nstep, restart, lmd, lbfgs
   USE command_line_options, ONLY : command_line
+  USE control_flags,    ONLY : lase3
   USE force_mod,        ONLY : lforce, lstres, sigma, force
   USE check_stop,       ONLY : check_stop_init, check_stop_now
   USE mp_images,        ONLY : intra_image_comm
@@ -155,7 +156,7 @@ SUBROUTINE run_pwscf ( exit_status )
      !
      ! ... send out forces to MM code in QM/MM run
      !
-     IF ( lmd .OR. lbfgs ) THEN
+     IF ( lmd .OR. lbfgs .OR. lase3 ) THEN
         !
         if (fix_volume) CALL impose_deviatoric_stress(sigma)
         if (fix_area)  CALL  impose_deviatoric_stress_2d(sigma)
@@ -192,7 +193,7 @@ SUBROUTINE run_pwscf ( exit_status )
      ! ... terms of the hamiltonian depending upon nuclear positions
      ! ... are reinitialized here
      !
-     IF ( lmd .OR. lbfgs ) THEN
+     IF ( lmd .OR. lbfgs .OR. lase3 ) THEN
         !
         ! ... update the wavefunctions, charge density, potential
         ! ... update_pot initializes structure factor array as well

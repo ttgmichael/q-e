@@ -369,6 +369,7 @@ SUBROUTINE electrons_scf ( printout, exxen )
   USE esm,                  ONLY : do_comp_esm, esm_printpot, esm_ewald
   USE fcp_variables,        ONLY : lfcpopt, lfcpdyn
   USE iso_c_binding,        ONLY : c_int
+  USE input_parameters,     ONLY : ensemble_energies
   !
   USE plugin_variables,     ONLY : plugin_etot
   !
@@ -646,6 +647,14 @@ SUBROUTINE electrons_scf ( printout, exxen )
            ! ... 1) the output HXC-potential is saved in v
            ! ... 2) vnew contains V(out)-V(in) ( used to correct the forces ).
            !
+
+#ifdef use_beef
+           ! calculate ensemble xc energies for bayesian error estimates
+           if (ensemble_energies) then
+              CALL calc_ensemble_energies(.true.)
+           end if
+#endif
+
            vnew%of_r(:,:) = v%of_r(:,:)
            CALL v_of_rho( rho,rho_core,rhog_core, &
                           ehart, etxc, vtxc, eth, etotefield, charge, v)
@@ -797,6 +806,13 @@ SUBROUTINE electrons_scf ( printout, exxen )
         IF ( do_comp_esm ) CALL esm_printpot()
         !
         WRITE( stdout, 9110 ) iter
+        !
+#ifdef use_beef
+        ! calculate ensemble xc energies for bayesian error estimates
+        if (ensemble_energies) then
+           CALL calc_ensemble_energies(.false.)
+        end if
+#endif
         !
         ! ... jump to the end
         !
@@ -1222,6 +1238,106 @@ SUBROUTINE electrons_scf ( printout, exxen )
 
   END SUBROUTINE print_energies
   !
+#ifdef use_beef
+     !
+     ! obtain xc ensemble energies from non-selfconsistent calculations
+     ! of the xc energies for perturbed BEEF expansion coefficents
+     ! (provided by libbeef)
+     !
+     SUBROUTINE calc_ensemble_energies(calc)
+     !
+       USE funct,             ONLY  : dft_is_meta
+       USE input_parameters,  ONLY  : print_ensemble_energies
+       implicit none
+       logical                        calc
+       real(DP), allocatable, save :: beefxc(:), energies(:)
+       real(DP), save              :: ldaxc
+       integer                     :: i
+     
+       if (.not. allocated(beefxc)) allocate(beefxc(32))
+       if (.not. allocated(energies)) allocate(energies(2000))
+
+       if(calc) then
+       
+          if (.not. dft_is_meta()) then
+            do i=1,30
+              !calculate exchange contributions in Legendre polynomial basis
+              call beefsetmode(i-1)
+              CALL v_xc( rho, rho_core, rhog_core, beefxc(i), vtxc, v%of_r )
+            enddo
+
+            !calculate lda correlation contribution
+            call beefsetmode(-3)
+            CALL v_xc( rho, rho_core, rhog_core, beefxc(31), vtxc, v%of_r )
+
+            !calculate pbe correlation contribution
+            call beefsetmode(-2)
+            CALL v_xc( rho, rho_core, rhog_core, beefxc(32), vtxc, v%of_r )
+
+            !calculate lda xc energy
+            call beefsetmode(-4)
+            CALL v_xc( rho, rho_core, rhog_core, ldaxc, vtxc, v%of_r )
+
+            !restore original, unperturbed xc potential and energy
+            call beefsetmode(-1)
+            CALL v_xc( rho, rho_core, rhog_core, etxc, vtxc, v%of_r )
+          else
+            do i=1,30
+              !calculate exchange contributions in Legendre polynomial basis
+              call beefsetmode(i-1)
+              CALL v_xc_meta( rho, rho_core, rhog_core, beefxc(i), vtxc, v%of_r, v%kin_r )
+            enddo
+
+            !calculate lda correlation contribution
+            call beefsetmode(-3)
+            CALL v_xc_meta( rho, rho_core, rhog_core, beefxc(31), vtxc, v%of_r, v%kin_r )
+
+            !calculate pbe correlation contribution
+            call beefsetmode(-2)
+            CALL v_xc_meta( rho, rho_core, rhog_core, beefxc(32), vtxc, v%of_r, v%kin_r )
+
+            !calculate ldaxc energy
+            call beefsetmode(-4)
+            CALL v_xc_meta( rho, rho_core, rhog_core, ldaxc, vtxc, v%of_r, v%kin_r )
+
+            !restore original, unperturbed xc potential and energy
+            call beefsetmode(-1)
+            CALL v_xc_meta( rho, rho_core, rhog_core, etxc, vtxc, v%of_r, v%kin_r )
+          endif
+
+       else
+       
+          if (ionode) then
+             call beefrandinitdef
+             
+             !subtract LDA xc from exchange contributions
+             do i=1,32
+                beefxc(i) = beefxc(i)-ldaxc
+             enddo
+             beefxc(32) = beefxc(32)+beefxc(31)
+
+             if (print_ensemble_energies) then
+                call beefensemble(beefxc, energies)
+                WRITE(*,*) ""
+                WRITE(*,*) "BEEFens 2000 ensemble energies"
+                do i=1,2000
+                   WRITE(*, "(E35.15)"), energies(i)
+                enddo
+             endif
+             
+             WRITE(*,*)
+             WRITE(*,*) "BEEF-vdW xc energy contributions"
+             do i=1,32
+                WRITE(*,*) i, ": ", beefxc(i)
+             enddo
+          endif
+       
+       endif
+     !
+     END SUBROUTINE calc_ensemble_energies
+#endif
+     !
+     !
 END SUBROUTINE electrons_scf
 !
 !----------------------------------------------------------------------------

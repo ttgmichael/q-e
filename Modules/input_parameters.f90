@@ -275,6 +275,10 @@ MODULE input_parameters
         LOGICAL  :: lfcpopt = .FALSE. ! FCP optimisation switch
         LOGICAL  :: lfcpdyn = .FALSE. ! FCP thermostat enabled if .true.
         !
+        LOGICAL  :: ase_fifo = .FALSE.
+        ! if .true. use fifo instead of stdin to get coordinates from ase3
+        ! and send forces back to it
+        !
         ! location of xml input according to xsd schema
         CHARACTER(len=256) :: input_xml_schema_file = ' '
 
@@ -285,7 +289,7 @@ MODULE input_parameters
           gdir, nppstr, wf_collect, lelfield, nberrycyc, refg,            &
           tefield2, saverho, tabps, lkpoint_dir, use_wannier, lecrpa,     &
           tqmmm, vdw_table_name, lorbm, memory, point_label_type,         &
-          lfcpopt, lfcpdyn, input_xml_schema_file, monopole                                        
+          lfcpopt, lfcpdyn, input_xml_schema_file, monopole, ase_fifo
 !
 !=----------------------------------------------------------------------------=!
 !  SYSTEM Namelist Input Parameters
@@ -387,6 +391,13 @@ MODULE input_parameters
           ! Variable used to overwrite dft definition contained in
           ! pseudopotential files; 'none' means DFT is read from pseudos.
           ! Only used in PW - allowed values: any legal DFT value
+
+        LOGICAL :: ensemble_energies = .false.
+          ! if .true. and input dft set to a BEE functional,
+          ! calculate ensemble energies as input for bayesian error estimates 
+        LOGICAL :: print_ensemble_energies = .true.
+          ! if .true. print 2000 ensemble energies and basis
+          ! if .false. only print basis
 
         REAL(DP) :: starting_magnetization( nsx ) = 0.0_DP
           ! ONLY PW
@@ -589,6 +600,7 @@ MODULE input_parameters
              ntyp, nbnd, ecutwfc, ecutrho, nr1, nr2, nr3, nr1s, nr2s,         &
              nr3s, nr1b, nr2b, nr3b, nosym, nosym_evc, noinv, use_all_frac,   &
              force_symmorphic, starting_magnetization,                        &
+             ensemble_energies, print_ensemble_energies,                      &
              occupations, degauss, nspin, ecfixed,                            &
              qcutz, q2sigma, lda_plus_U, lda_plus_u_kind,                     &
              Hubbard_U, Hubbard_J, Hubbard_alpha,                             &
@@ -983,10 +995,10 @@ MODULE input_parameters
 
         CHARACTER(len=80) :: ion_dynamics = 'none'
           ! set how ions should be moved
-        CHARACTER(len=80) :: ion_dynamics_allowed(9)
+        CHARACTER(len=80) :: ion_dynamics_allowed(10)
         DATA ion_dynamics_allowed / 'none', 'sd', 'cg', 'langevin', &
                                     'damp', 'verlet', 'bfgs', 'beeman',& 
-                                    'langevin-smc' /
+                                    'langevin-smc', 'ase3' /
 
         REAL(DP) :: ion_radius(nsx) = 0.5_DP
           ! pseudo-atomic radius of the i-th atomic species (CP only)
