@@ -109,7 +109,6 @@ module funct
   !              "tpss"    = "sla+pw+tpss+tpss"  = TPSS Meta-GGA
   !              "m06l"    = "nox+noc+m6lx+m6lc" = M06L Meta-GGA
   !              "tb09"    = "sla+pw+tb09+tb09"  = TB09 Meta-GGA
-  !              "scan"    = "sla+pw+scan+scan"  = SCAN Meta-GGA
   !              "pbe0"    = "pb0x+pw+pb0x+pbc"  = PBE0
   !              "hse"     = "sla+pw+hse+pbc"    = Heyd-Scuseria-Ernzerhof (HSE 06, see note below)
   !              "beef-vdw"= "sla+pw+beex+beec+vdw2"  = BEEF-vdW GGA
@@ -171,7 +170,6 @@ module funct
   !              "rpb"    revised PBE by Zhang-Yang      igcx =4
   !              "hcth"   Cambridge exch, Handy et al    igcx =5
   !              "optx"   Handy's exchange functional    igcx =6
-  !              "tpss"   TPSS meta-gga                  igcx =7
   !              "pb0x"   PBE0 (PBE exchange*0.75)       igcx =8
   !              "b3lp"   B3LYP (Becke88*0.72)           igcx =9
   !              "psx"    PBEsol exchange                igcx =10
@@ -623,7 +621,7 @@ CONTAINS
        
     ! Special case : mBEEF Meta GGA
     else if ( INDEX(dftout, 'mBEEF', .FALSE.) .EQ. 1) then
-       if (LEN_TRIM(dftout) .EQ. 4) then
+       if (LEN_TRIM(dftout) .EQ. 5) then
           dft_defined = set_dft_values(0,0,0,0,0,6)
        else
           select case(TRIM(dftout(6:9)))
