@@ -1528,31 +1528,26 @@ subroutine scancx_spin(rhoup,rhodw,grhoup2,grhodw2,tauup,taudw,sx,&
   use xc_f90_lib_m
 #endif
   implicit none  
-  real(DP), intent(in) :: rho, grho, tau
-  real(dp), intent(out):: sx, sc, v1x, v2x, v3x, v1c, v2c, v3c
+  !     dummy arguments
+  real(dp), intent(in) :: rhoup, rhodw, grhoup2,grhodw2, tauup, taudw
+  real(dp), intent(out):: sx, v1xup, v1xdw, v2xup, v2xdw, v3xup, v3xdw
+  ! up and down charge
+  ! up and down gradient of the charge
+  ! exchange and correlation energies
+  ! derivatives of exchange wr. rho
+  ! derivatives of exchange wr. grho
+  ! up and down kinetic energy density 
+  ! derivatives of exchange wr. tau
 #if defined(__LIBXC)
   TYPE(xc_f90_pointer_t) :: xc_func
   TYPE(xc_f90_pointer_t) :: xc_info
   integer :: size = 1
   integer :: func_id = 202  !
   real(dp) :: lapl_rho, vlapl_rho ! not used in SCAN
-  !
-  lapl_rho = grho
-  !     dummy arguments
-  !
-  real(DP) :: rhoup, rhodw, grhoup2, grhodw2, sx, v1xup, v1xdw, &
-       v2xup, v2xdw
-  ! up and down charge
-  ! up and down gradient of the charge
-  ! exchange and correlation energies
-  ! derivatives of exchange wr. rho
-  ! derivatives of exchange wr. grho
-  !
-  real(DP):: tauup,taudw, &! up and down kinetic energy density 
-       v3xup,v3xdw         ! derivatives of exchange wr. tau
-  real(DP) :: small  
+  real(dp) :: small
+  real(dp) :: rho, sxup, sxdw 
   parameter (small = 1.E-10_DP)  
-  real(DP) :: rho, sxup, sxdw  
+  ! 
   func_id = 263  ! XC_MGGA_X_SCAN
   !
   ! spin exchange scaling
@@ -1560,6 +1555,7 @@ subroutine scancx_spin(rhoup,rhodw,grhoup2,grhodw2,tauup,taudw,sx,&
   !
   if (rhoup.gt.small.and.sqrt(abs(grhoup2)).gt.small &
        .and. abs(tauup).gt.small) then
+     lapl_rho = 4.0_DP*grhodw2
      call xc_f90_func_init(xc_func, xc_info, func_id, XC_UNPOLARIZED)
      call xc_f90_mgga_exc_vxc(xc_func, size, 2.0_DP*rhoup, 4.0_DP*grhoup2, lapl_rho, 2.0_DP*tauup,&
                            sxup, v1xup, v2xup, vlapl_rho, v3xup)  
@@ -1572,6 +1568,7 @@ subroutine scancx_spin(rhoup,rhodw,grhoup2,grhodw2,tauup,taudw,sx,&
   endif
   if (rhodw.gt.small.and.sqrt(abs(grhodw2)).gt.small &
        .and. abs(taudw).gt.small) then
+     lapl_rho = 4.0_DP*grhodw2
      call xc_f90_func_init(xc_func, xc_info, func_id, XC_UNPOLARIZED)
      call xc_f90_mgga_exc_vxc(xc_func, size, 2.0_DP*rhodw, 4.0_DP*grhodw2, lapl_rho, 2.0_DP*taudw,&
                            sxdw, v1xdw, v2xdw, vlapl_rho, v3xdw)  
@@ -1588,6 +1585,10 @@ subroutine scancx_spin(rhoup,rhodw,grhoup2,grhodw2,tauup,taudw,sx,&
   v2xup=2.0_DP*v2xup
   v2xdw=2.0_DP*v2xdw
   !
+#else
+  sx=0.0_dp; sc=0.0_dp; v1x=0.0_dp; v2x=0.0_dp; v3x=0.0_dp; v1c=0.0_dp; v2c=0.0_dp; v3c=0.0_dp
+  call errore('tb09','need libxc',1)
+#endif  
   return  
 end subroutine scancx_spin
 !
@@ -1606,6 +1607,7 @@ subroutine mbeefcxc(rho, grho, tau, sx, sc, v1x, v2x, v3x, v1c, v2c, v3c)
   !     mBEEF metaGGA corrections for exchange and correlation - Hartree a.u.
   !
   USE kinds,            ONLY : DP
+  USE funct,            ONLY : dft_is_nonlocc
 #if defined(__LIBXC)
   USE funct,            ONLY : libxc_major, libxc_minor, libxc_micro, get_libxc_version
   use xc_f90_types_m
@@ -1629,27 +1631,7 @@ subroutine mbeefcxc(rho, grho, tau, sx, sc, v1x, v2x, v3x, v1c, v2c, v3c)
  
   lapl_rho = grho
 
-  if .not. (dft_is_nonlocc ()) then
-     ! exchange
-     func_id = 249  ! XC_MGGA_X_MBEEF
-     call xc_f90_func_init(xc_func, xc_info, func_id, XC_UNPOLARIZED)
-     call xc_f90_mgga_exc_vxc(xc_func, size, rho, grho, lapl_rho, 0.5_dp*tau,&
-                           sx, v1x, v2x, vlapl_rho, v3x)  
-     call xc_f90_func_end(xc_func)
-     sx = sx * rho
-     v2x = v2x*2.0_dp
-     v3x = v3x*0.5_dp
-     !
-     ! correlation for MBEEF is PBESOL  
-     !
-     func_id = 133  ! XC_GGA_C_PBE_SOL
-     call xc_f90_func_init(xc_func, xc_info, func_id, XC_UNPOLARIZED)    
-     call xc_f90_gga_exc_vxc(xc_func, size, rho, grho, sc, v1c, v2c)  
-     call xc_f90_func_end(xc_func)
-     sc = sc * rho !E_x = rho\epsilon_x(rhoup,rhodw,grhoup,grhodw,tauup,taudw)
-     v2c = v2c*2.0_dp
-     !v3c = v3c*0.5_dp
-  else
+  if (dft_is_nonlocc()) then
      ! exchange
      func_id = 250  ! XC_MGGA_X_MBEEFVDW
      call xc_f90_func_init(xc_func, xc_info, func_id, XC_UNPOLARIZED)
@@ -1678,7 +1660,26 @@ subroutine mbeefcxc(rho, grho, tau, sx, sc, v1x, v2x, v3x, v1c, v2c, v3c)
      
      v2c = v2c*2.0_dp
      !v3c = v3c*0.5_dp
-     
+  else
+     ! exchange
+     func_id = 249  ! XC_MGGA_X_MBEEF
+     call xc_f90_func_init(xc_func, xc_info, func_id, XC_UNPOLARIZED)
+     call xc_f90_mgga_exc_vxc(xc_func, size, rho, grho, lapl_rho, 0.5_dp*tau,&
+                           sx, v1x, v2x, vlapl_rho, v3x)  
+     call xc_f90_func_end(xc_func)
+     sx = sx * rho
+     v2x = v2x*2.0_dp
+     v3x = v3x*0.5_dp
+     !
+     ! correlation for MBEEF is PBESOL  
+     !
+     func_id = 133  ! XC_GGA_C_PBE_SOL
+     call xc_f90_func_init(xc_func, xc_info, func_id, XC_UNPOLARIZED)    
+     call xc_f90_gga_exc_vxc(xc_func, size, rho, grho, sc, v1c, v2c)  
+     call xc_f90_func_end(xc_func)
+     sc = sc * rho !E_x = rho\epsilon_x(rhoup,rhodw,grhoup,grhodw,tauup,taudw)
+     v2c = v2c*2.0_dp
+     !v3c = v3c*0.5_dp
   end if
      
 #else
@@ -1694,45 +1695,41 @@ subroutine mbeefcx_spin(rhoup,rhodw,grhoup2,grhodw2,tauup,taudw,sx,&
   !     mBEEF metaGGA exchange corrections with spin - Hartree a.u.
   !
   USE kinds,            ONLY : DP
+  USE funct,            ONLY : dft_is_nonlocc
 #if defined(__LIBXC)
   USE funct,            ONLY : libxc_major, libxc_minor, libxc_micro, get_libxc_version
   use xc_f90_types_m
   use xc_f90_lib_m
 #endif
   implicit none  
-  real(DP), intent(in) :: rho, grho, tau
-  real(dp), intent(out):: sx, sc, v1x, v2x, v3x, v1c, v2c, v3c
+  !     dummy arguments
+  real(DP), intent(in) :: rhoup, rhodw, grhoup2,grhodw2, tauup, taudw
+  real(dp), intent(out):: sx, v1xup, v1xdw, v2xup, v2xdw, v3xup, v3xdw
+  ! up and down charge
+  ! up and down gradient of the charge
+  ! exchange and correlation energies
+  ! derivatives of exchange wr. rho
+  ! derivatives of exchange wr. grho
+  ! up and down kinetic energy density 
+  ! derivatives of exchange wr. tau
 #if defined(__LIBXC)
   TYPE(xc_f90_pointer_t) :: xc_func
   TYPE(xc_f90_pointer_t) :: xc_info
   integer :: size = 1
   integer :: func_id = 202  !
   real(dp) :: lapl_rho, vlapl_rho ! not used in SCAN
-  !
-  lapl_rho = grho
-  !     dummy arguments
-  !
-  real(DP) :: rhoup, rhodw, grhoup2, grhodw2, sx, v1xup, v1xdw, &
-       v2xup, v2xdw
-  ! up and down charge
-  ! up and down gradient of the charge
-  ! exchange and correlation energies
-  ! derivatives of exchange wr. rho
-  ! derivatives of exchange wr. grho
-  !
-  real(DP):: tauup,taudw, &! up and down kinetic energy density 
-       v3xup,v3xdw         ! derivatives of exchange wr. tau
-  real(DP) :: small  
+  real(dp) :: small  
+  real(dp) :: rho, sxup, sxdw 
   parameter (small = 1.E-10_DP)  
-  real(DP) :: rho, sxup, sxdw  
   !
   ! spin exchange scaling
   rho = rhoup + rhodw
   !
-  if .not. (dft_is_nonlocc ()) then
-     func_id = 249  ! XC_MGGA_X_MBEEF
+  if (dft_is_nonlocc ()) then
+     func_id = 250  ! XC_MGGA_X_MBEEFVDW
      if (rhoup.gt.small.and.sqrt(abs(grhoup2)).gt.small &
           .and. abs(tauup).gt.small) then
+        lapl_rho = 4.0_DP*grhoup2
         call xc_f90_func_init(xc_func, xc_info, func_id, XC_UNPOLARIZED)
         call xc_f90_mgga_exc_vxc(xc_func, size, 2.0_DP*rhoup, 4.0_DP*grhoup2, lapl_rho, 2.0_DP*tauup,&
                               sxup, v1xup, v2xup, vlapl_rho, v3xup)  
@@ -1745,6 +1742,7 @@ subroutine mbeefcx_spin(rhoup,rhodw,grhoup2,grhodw2,tauup,taudw,sx,&
      endif
      if (rhodw.gt.small.and.sqrt(abs(grhodw2)).gt.small &
           .and. abs(taudw).gt.small) then
+        lapl_rho = 4.0_DP*grhodw2
         call xc_f90_func_init(xc_func, xc_info, func_id, XC_UNPOLARIZED)
         call xc_f90_mgga_exc_vxc(xc_func, size, 2.0_DP*rhodw, 4.0_DP*grhodw2, lapl_rho, 2.0_DP*taudw,&
                               sxdw, v1xdw, v2xdw, vlapl_rho, v3xdw)  
@@ -1757,11 +1755,12 @@ subroutine mbeefcx_spin(rhoup,rhodw,grhoup2,grhodw2,tauup,taudw,sx,&
      endif
      sx=0.5_DP*(sxup+sxdw)
      v2xup=2.0_DP*v2xup
-     v2xdw=2.0_DP*v2xdw
+     v2xdw=2.0_DP*v2xdw     
   else
-     func_id = 250  ! XC_MGGA_X_MBEEFVDW
+     func_id = 249  ! XC_MGGA_X_MBEEF
      if (rhoup.gt.small.and.sqrt(abs(grhoup2)).gt.small &
           .and. abs(tauup).gt.small) then
+        lapl_rho = 4.0_DP*grhoup2
         call xc_f90_func_init(xc_func, xc_info, func_id, XC_UNPOLARIZED)
         call xc_f90_mgga_exc_vxc(xc_func, size, 2.0_DP*rhoup, 4.0_DP*grhoup2, lapl_rho, 2.0_DP*tauup,&
                               sxup, v1xup, v2xup, vlapl_rho, v3xup)  
@@ -1774,6 +1773,7 @@ subroutine mbeefcx_spin(rhoup,rhodw,grhoup2,grhodw2,tauup,taudw,sx,&
      endif
      if (rhodw.gt.small.and.sqrt(abs(grhodw2)).gt.small &
           .and. abs(taudw).gt.small) then
+        lapl_rho = 4.0_DP*grhodw2
         call xc_f90_func_init(xc_func, xc_info, func_id, XC_UNPOLARIZED)
         call xc_f90_mgga_exc_vxc(xc_func, size, 2.0_DP*rhodw, 4.0_DP*grhodw2, lapl_rho, 2.0_DP*taudw,&
                               sxdw, v1xdw, v2xdw, vlapl_rho, v3xdw)  
@@ -1789,6 +1789,11 @@ subroutine mbeefcx_spin(rhoup,rhodw,grhoup2,grhodw2,tauup,taudw,sx,&
      v2xdw=2.0_DP*v2xdw
   end if
   !
+#else
+  sx=0.0_dp; sc=0.0_dp; v1x=0.0_dp; v2x=0.0_dp; v3x=0.0_dp; v1c=0.0_dp; v2c=0.0_dp; v3c=0.0_dp
+  call errore('tb09','need libxc',1)
+#endif
+
   return  
 end subroutine mbeefcx_spin
 !

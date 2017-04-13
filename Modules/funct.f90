@@ -352,7 +352,7 @@ module funct
                'B3LP', 'PSC', 'PBE', 'xxxx', 'xxxx', 'Q2DC', 'X3LP',&
                'BEEC' / 
 
-  data meta  / 'NONE', 'TPSS', 'M06L', 'TB09', 'META', 'SCAN', 'MBEEF' / 
+  data meta  / 'NONE', 'TPSS', 'M06L', 'TB09', 'META', 'SCAN', 'MBEE' / 
 
   data nonlocc/'NONE', 'VDW1', 'VDW2', 'VV10', 'VDWX', 'VDWY', 'VDWZ' / 
 
@@ -778,7 +778,7 @@ CONTAINS
     ishybrid = ( exx_fraction /= 0.0_DP )
     !
     ! FORCE USPP/PAW with Meta-GGA
-    isupppaw = ( INDEX(dftout, 'USPP', .FALSE.) .EQ. 1) .or. ( INDEX(dftout, 'PAW', .FALSE.) .EQ. 1)
+    isuspppaw = ( INDEX(dft, 'USPP', .FALSE.) .EQ. 1) .or. ( INDEX(dft, 'PAW', .FALSE.) .EQ. 1)
 
     has_finite_size_correction = ( iexch==8 .or. icorr==10)
 
@@ -2725,11 +2725,9 @@ subroutine tau_xc_spin (rhoup, rhodw, grhoup, grhodw, tauup, taudw, ex, ec,   &
   real(dp)                :: rh, zeta, atau, grhoup2, grhodw2
   real(dp), parameter     :: epsr=1.0d-08, zero=0._dp
   !
-  real(dp), dimension(3), intent(in)  :: grho_vec !for mBEEF
-  real(dp), intent(in)    :: grho2, !for mBEEF
-  real(dp), intent(out)   :: v2c !for mBEEF
-  real(dp), intent(out)   :: ec_lda,v1cup_lda,v1cdw_lda !for mBEEF-vdw's LDA portion
-  real(dp), intent(out)   :: ec_gga, v1cup_gga, v1cdw_gga, !for mBEEF-vdw's GCC portion
+  real(dp)                :: grhovec(3), grho2, v2c !for mBEEF
+  real(dp)                :: ec_lda,v1cup_lda,v1cdw_lda !for mBEEF-vdw's LDA portion
+  real(dp)                :: ec_gga, v1cup_gga, v1cdw_gga !for mBEEF-vdw's GCC portion
   real(dp), parameter     :: lda_coeff=0.600166476948828631066, gga_coeff=0.399833523051171368934
   !
   !_____________________________
