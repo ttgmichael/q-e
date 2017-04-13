@@ -611,7 +611,7 @@ CONTAINS
        if (LEN_TRIM(dftout) .EQ. 4) then
           dft_defined = set_dft_values(0,0,0,0,0,5)
        else
-          if ( INDEX(TRIM(dftout(5:)), '-VV10', .FALSE) .EQ. 1) &
+          if ( INDEX(dftout, '-VV10', .FALSE) .EQ. 1) &
              dft_defined = set_dft_values(0,0,0,0,3,5)
        endif
        
@@ -620,7 +620,7 @@ CONTAINS
        if (LEN_TRIM(dftout) .EQ. 5) then
           dft_defined = set_dft_values(0,0,0,0,0,6)
        else
-          if ( INDEX(TRIM(dftout(5:)), '-VDW', .FALSE) .EQ. 1) &
+          if ( INDEX(dftout, '-VDW', .FALSE) .EQ. 1) &
              dft_defined = set_dft_values(0,0,0,0,2,6)
        endif
        
