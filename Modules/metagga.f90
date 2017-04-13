@@ -1659,7 +1659,7 @@ subroutine mbeefcxc(rho, grho, tau, sx, sc, v1x, v2x, v3x, v1c, v2c, v3c)
      sc = sc * rho !E_x = rho\epsilon_x(rhoup,rhodw,grhoup,grhodw,tauup,taudw)
      
      v2c = v2c*2.0_dp
-     !v3c = v3c*0.5_dp
+     v3c = 0.0_dp
   else
      ! exchange
      func_id = 249  ! XC_MGGA_X_MBEEF
@@ -1679,7 +1679,7 @@ subroutine mbeefcxc(rho, grho, tau, sx, sc, v1x, v2x, v3x, v1c, v2c, v3c)
      call xc_f90_func_end(xc_func)
      sc = sc * rho !E_x = rho\epsilon_x(rhoup,rhodw,grhoup,grhodw,tauup,taudw)
      v2c = v2c*2.0_dp
-     !v3c = v3c*0.5_dp
+     v3c = 0.0_dp
   end if
      
 #else
