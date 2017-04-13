@@ -2651,7 +2651,7 @@ subroutine tau_xc (rho, grho2, tau, ex, ec, v1x, v2x, v3x, v1c, v2c, v3c)
   !
   implicit none
 
-  real(DP) :: rho, grho, tau, ex, ec, v1x, v2x, v3x, v1c, v2c, v3c
+  real(DP) :: rho, grho2, tau, ex, ec, v1x, v2x, v3x, v1c, v2c, v3c
   
   !-----------------------------------------------------------------------
   if     (imeta == 1) then
@@ -2789,19 +2789,7 @@ subroutine tau_xc_spin (rhoup, rhodw, grhoup, grhodw, tauup, taudw, ex, ec,   &
      atau =  tauup + taudw    ! KE-density in Hartree
      
      !correlation
-     if .not. (dft_is_nonlocc ()) then !mBEEF's correlation: PBESOL
-        grho2=0.0_DP
-        do ipol=1,3
-           grhovec(ipol)=grhoup(ipol)+grhodw(ipol)
-           grho2=grho2+grhovec(ipol)**2
-        end do 
-        !call pbesol spin - pbec_spin
-        call pbec_spin (rh, zeta, grho2, 2, ec, v1cup, v1cdw, v2c)
-        v2cup = v2c
-        v2cdw = v2c
-        v3cup = 0.0_DP
-        v3cdw = 0.0_DP
-     else                               !mBEEF-vDW's correlation: PW + PBESOL
+     if (dft_is_nonlocc ()) then    !mBEEF-vDW's correlation: PW + PBESOL 
         !call pw_spin and add some to pbesol spin
         call pw_spin (rh, zeta, ec_lda,v1cup_lda, v1cdw_lda)
         grho2=0.0_DP
@@ -2814,6 +2802,18 @@ subroutine tau_xc_spin (rhoup, rhodw, grhoup, grhodw, tauup, taudw, ex, ec,   &
         ec = lda_coeff*ec_lda + gga_coeff*ec_gga
         v1cup = lda_coeff*v1cup_lda + gga_coeff*v1cup_gga
         v1cdw = lda_coeff*v1cdw_lda + gga_coeff*v1cdw_gga
+        v2cup = v2c
+        v2cdw = v2c
+        v3cup = 0.0_DP
+        v3cdw = 0.0_DP
+     else                           !mBEEF's correlation: PBESOL
+        grho2=0.0_DP
+        do ipol=1,3
+           grhovec(ipol)=grhoup(ipol)+grhodw(ipol)
+           grho2=grho2+grhovec(ipol)**2
+        end do 
+        !call pbesol spin - pbec_spin
+        call pbec_spin (rh, zeta, grho2, 2, ec, v1cup, v1cdw, v2c)
         v2cup = v2c
         v2cdw = v2c
         v3cup = 0.0_DP
