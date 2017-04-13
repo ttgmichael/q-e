@@ -313,6 +313,14 @@ SUBROUTINE v_xc_meta( rho, rho_core, rhog_core, etxc, vtxc, v, kedtaur )
   vtxc = omega * vtxc / ( dfftp%nr1*dfftp%nr2*dfftp%nr3 ) 
   etxc = omega * etxc / ( dfftp%nr1*dfftp%nr2*dfftp%nr3 )
   !
+  ! ... add gradient corrections (if any)
+  !
+  CALL gradcorr( rho%of_r, rho%of_g, rho_core, rhog_core, etxc, vtxc, v )
+  !
+  ! ... add non local corrections (if any)
+  !
+  IF ( dft_is_nonlocc() ) CALL nlc( rho%of_r, rho_core, nspin, etxc, vtxc, v )
+  ! 
   CALL mp_sum(  vtxc , intra_bgrp_comm )
   CALL mp_sum(  etxc , intra_bgrp_comm )
   !

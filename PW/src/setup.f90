@@ -124,10 +124,12 @@ SUBROUTINE setup()
   ! ... check for features not implemented with US-PP or PAW
   !
   IF ( okvan .OR. okpaw ) THEN
-     IF ( dft_is_meta() ) CALL errore( 'setup', &
-                               'Meta-GGA not implemented with USPP/PAW', 1 )
+     IF ( dft_is_meta() ) .and. .not. (dft_is_uspppaw()) CALL errore( 'setup',&
+        'Meta-GGA with USPP/PAW requires explicit xc function call with USPP/PAW in name', 1 )
+     IF ( dft_is_meta() ) .and. (dft_is_uspppaw()) CALL infomsg ('setup',&
+        'Warning: Meta-GGA not fully tested with USPP/PAW, use with caution')
      IF ( noncolin .AND. lberry)  CALL errore( 'setup', &
-       'Noncolinear Berry Phase/electric not implemented with USPP/PAW', 1 )
+        'Noncolinear Berry Phase/electric not implemented with USPP/PAW', 1 )
      IF  (ts_vdw ) CALL errore ('setup',&
                    'Tkatchenko-Scheffler not implemented with USPP/PAW', 1 )
      IF ( lorbm ) CALL errore( 'setup', &

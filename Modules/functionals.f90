@@ -1012,6 +1012,7 @@ subroutine pbex (rho, grho, iflag, sx, v1x, v2x)
   ! iflag=5  optB88: Klimes et al., J. Phys. Cond. Matter, 22, 022201 (2010)
   ! iflag=6  optB86b: Klimes et al., Phys. Rev. B 83, 195131 (2011)
   ! iflag=7  ev: Engel and Vosko, PRB 47, 13164 (1991)
+  ! iflag=8  RPBE: Hammer, Hansen, Noerskov PRB (1999)
   !
   USE kinds, ONLY : DP
   USE constants, ONLY : pi
@@ -1152,7 +1153,7 @@ subroutine pbex (rho, grho, iflag, sx, v1x, v2x)
   v2x = exunif * dfx * dsg / agrho
   sx = sx * rho
   else
-        !RPBE Hammer, Hansen, Noerskov PRB 1999
+        !RPBE 
         kf = c2 * rho**third
         sx = -0.238732414637843_DP*kf
         f3 = 0.026121172985233605_DP / rho**(8.0_DP / 3.0_DP)
@@ -1305,8 +1306,8 @@ subroutine pbec (rho, grho, iflag, sc, v1c, v2c)
 #else
   real(DP), parameter :: ga = 0.031091d0
   real(DP) :: be (3)
-!             pbe           pbesol   pbeq2d
-  data be / 0.066725d0, 0.046d0,     0.066725d0/
+!             pbe           pbesol       pbeq2d
+  data be / 0.066725d0,     0.046d0,     0.066725d0/
   real(DP), parameter :: third = 1.d0 / 3.d0, pi34 = 0.6203504908994d0
   real(DP), parameter :: xkf = 1.919158292677513d0, xks = 1.128379167095513d0
   ! pi34=(3/4pi)^(1/3), xkf=(9 pi/4)^(1/3), xks= sqrt(4/pi)

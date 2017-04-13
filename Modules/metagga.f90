@@ -14,6 +14,7 @@
 !           - TPSS (Tao, Perdew, Staroverov & Scuseria)
 !           - TB09 (via libxc)
 !           - M06L
+!           - SCAN (via libxc)
 !
 !=========================================================================
 !   
@@ -99,8 +100,8 @@ subroutine tpsscxc( rho, grho, tau, sx, sc, v1x, v2x, v3x, v1c, v2c, v3c )
 end subroutine tpsscxc
 !-------------------------------------------------------------------------
 subroutine metax(rho,grho2,tau,ex,v1x,v2x,v3x)
-  !    --------------------------------------------------------------==
-  !     ==  TPSS meta-GGA exchange potential and energy                    
+  !  ==--------------------------------------------------------------==
+  !  ==  TPSS meta-GGA exchange potential and energy                 ==  
   !  ==                                                              ==
   !  ==--------------------------------------------------------------==
   
@@ -151,11 +152,12 @@ subroutine metax(rho,grho2,tau,ex,v1x,v2x,v3x)
   !  ==--------------------------------------------------------------==
   return
 end subroutine metax
-!==   ------------------------------------------------------------------
+!-------------------------------------------------------------------------
 subroutine metac(rho,grho2,tau,ec,v1c,v2c,v3c)
-  !==   ------------------------------------------------------------------
-  !  TPSS meta-GGA correlation energy and potentials
-  !==   ------------------------------------------------------------------
+  !  ==----------------------------------------------------------------==
+  !  ==  TPSS meta-GGA correlation energy and potentials               ==
+  !  ==                                                                ==
+  !  ==----------------------------------------------------------------==
   USE kinds,            ONLY : DP
   implicit none
   !  INPUT
@@ -362,7 +364,11 @@ end subroutine metaFX
 subroutine tpsscx_spin(rhoup,rhodw,grhoup2,grhodw2,tauup,taudw,sx,&
      v1xup,v1xdw,v2xup,v2xdw,v3xup,v3xdw)
   !-----------------------------------------------------------------
-  !     TPSS metaGGA for exchange - Hartree a.u.
+  !     TPSS metaGGA for exchange for spin - Hartree a.u.
+  !
+  !     exact spin-scaling relation: E_x(rhoup,rhodw) = 0.5*E_x(2*rhoup) + 0.5*E_x(2*rhodw),
+  !     where E_x(rho) => E_x(rho/2,rho/2)  such that rho = rhoup+rhodw
+  !      
   !
   USE kinds,            ONLY : DP
   implicit none  
@@ -379,12 +385,14 @@ subroutine tpsscx_spin(rhoup,rhodw,grhoup2,grhodw2,tauup,taudw,sx,&
   !
   real(DP):: tauup,taudw, &! up and down kinetic energy density 
        v3xup,v3xdw         ! derivatives of exchange wr. tau
+  !
   real(DP) :: small  
   parameter (small = 1.E-10_DP)  
   real(DP) :: rho, sxup, sxdw  
   !
-  ! exchange
-  rho = rhoup + rhodw  
+  ! exact spin exchange scaling relation
+  rho = rhoup + rhodw 
+  !
   if (rhoup.gt.small.and.sqrt(abs(grhoup2)).gt.small &
        .and. abs(tauup).gt.small) then
      call metax(2.0_DP*rhoup,4.0_DP*grhoup2, &
@@ -415,14 +423,14 @@ end subroutine tpsscx_spin
 !-----------------------------------------------------------------------
 subroutine tpsscc_spin(rho,zeta,grhoup,grhodw, &
      atau,sc,v1cup,v1cdw,v2cup,v2cdw,v3cup, v3cdw)
-!-----------------------------------------------------------------------
-!     tpss metaGGA for correlations - Hartree a.u.
-!
+  !-----------------------------------------------------------------------
+  !     TPSS metaGGA for correlations for spin - Hartree a.u.
+  !
   USE kinds,            ONLY : DP
   implicit none  
-!
-!     dummy arguments
-!
+  !
+  !   dummy arguments
+  !
   real(DP) :: rho, zeta, grhoup(3),grhodw(3), sc, v1cup, v1cdw, v3c  
   ! the total charge
   ! the magnetization
@@ -438,16 +446,16 @@ subroutine tpsscc_spin(rho,zeta,grhoup,grhodw, &
   parameter (small = 1.E-10_DP)  
   !
   !
-! vector
+  ! vector
   grho_vec=grhoup+grhodw
   grho=0.0_DP
   do ipol=1,3
      grho    = grho    + grho_vec(ipol)**2
   end do
-!
-!
-  if (rho.le.small.or.abs (zeta) .gt.1.0_DP.or.sqrt (abs (grho) ) &
-       .le.small.or.abs(atau).lt.small) then
+  !
+  !
+  if (rho .le. small .or. abs(zeta) .gt. 1.0_DP .or. sqrt(abs(grho)) &
+       .le. small .or. abs(atau).lt. small) then
      
      sc    = 0.0_DP
      v1cup = 0.0_DP
@@ -507,11 +515,11 @@ subroutine metac_spin(rho,zeta,grhoup,grhodw, &
   real(DP) :: small, pi34, p43, third, fac
   parameter(small=1.0E-10_DP, &
        fac=3.09366772628013593097_DP**2)
-!     fac = (3*PI**2)**(2/3)
+  !     fac = (3*PI**2)**(2/3)
   parameter (pi34= 0.75_DP / 3.141592653589793_DP, &
        p43=4.0_DP/3.0_DP,third=1.0_DP/3.0_DP)
   integer:: ipol
-!-----------
+  !-----------
   rhoup=(1+zeta)*0.5_DP*rho
   rhodw=(1-zeta)*0.5_DP*rho
   grho2=0.0_DP
@@ -524,7 +532,7 @@ subroutine metac_spin(rho,zeta,grhoup,grhodw, &
      grhodw2=grhodw2+grhodw(ipol)**2
   end do 
   grho=sqrt(grho2)
-!     
+  !
   if(rho.gt.small) then
      v2_tmp=0.0_DP
      call pw_spin((pi34/rho)**third,zeta,ec_u,vcup_u,vcdw_u)
@@ -729,7 +737,7 @@ end subroutine metac_spin
 !
 !-------------------------------------------------------------------------
 !
-!                          END TPSSS
+!                          END of TPSS
 !-------------------------------------------------------------------------
 !
 !=========================================================================
@@ -1390,7 +1398,9 @@ end subroutine gvt4
 !-----------------------------------------------------------------------
 
 subroutine tb09cxc(rho, grho, tau, sx, sc, v1x, v2x,v3x,v1c, v2c,v3c)
-
+  !-----------------------------------------------------------------------
+  !     TB09 metaGGA corrections for exchange and correlation - Hartree a.u.
+  !
   USE kinds,            ONLY : DP
 #if defined(__LIBXC)
   use xc_f90_types_m
@@ -1417,7 +1427,7 @@ subroutine tb09cxc(rho, grho, tau, sx, sc, v1x, v2x,v3x,v1c, v2c,v3c)
       v1x, v2x, vlapl_rho, v3x)  
   call xc_f90_func_end(xc_func)	
   
-  sx = 0.0d0		       
+  sx = 0.0d0 !is this suppose to be 0?       
   v2x = v2x*2.0_dp
   v3x = v3x*0.5_dp
 
@@ -1430,7 +1440,7 @@ subroutine tb09cxc(rho, grho, tau, sx, sc, v1x, v2x,v3x,v1c, v2c,v3c)
      sc, v1c, v2c, vlapl_rho, v3c)  
   call xc_f90_func_end(xc_func)
 
-  sc = sc * rho			       
+  sc = sc * rho      
   v2c = v2c*2.0_dp
   v3c = v3c*0.5_dp
 #else
@@ -1439,15 +1449,20 @@ subroutine tb09cxc(rho, grho, tau, sx, sc, v1x, v2x,v3x,v1c, v2c,v3c)
 #endif
 end subroutine tb09cxc
 
-!c     ==================================================================
+!  =======================================================================
 
-
-
-
-!======================================================================
-! SCAN meta-GGA
-!======================================================================
-subroutine SCANcxc(rho, grho, tau, sx, sc, v1x, v2x, v3x, v1c, v2c, v3c)
+!-------------------------------------------------------------------------
+!
+!                          END M06L
+!
+!=========================================================================
+!
+!                       SCAN meta-GGA
+!=========================================================================
+subroutine scancxc(rho, grho, tau, sx, sc, v1x, v2x, v3x, v1c, v2c, v3c)
+  !-----------------------------------------------------------------------
+  !     SCAN metaGGA corrections for exchange and correlation - Hartree a.u.
+  !
   USE kinds,            ONLY : DP
 #if defined(__LIBXC)
   USE funct,            ONLY : libxc_major, libxc_minor, libxc_micro, get_libxc_version
@@ -1479,7 +1494,7 @@ subroutine SCANcxc(rho, grho, tau, sx, sc, v1x, v2x, v3x, v1c, v2c, v3c)
   call xc_f90_mgga_exc_vxc(xc_func, size, rho, grho, lapl_rho, 0.5_dp*tau,&
                            sx, v1x, v2x, vlapl_rho, v3x)  
   call xc_f90_func_end(xc_func)
-  sx = 0.0d0
+  sx = sx * rho !E_x = rho\epsilon_x(rhoup,rhodw,grhoup,grhodw,tauup,taudw)
   v2x = v2x*2.0_dp
   v3x = v3x*0.5_dp
 
@@ -1489,8 +1504,7 @@ subroutine SCANcxc(rho, grho, tau, sx, sc, v1x, v2x, v3x, v1c, v2c, v3c)
   call xc_f90_mgga_exc_vxc(xc_func, size, rho, grho, lapl_rho, 0.5_dp*tau, &
                            sc, v1c, v2c, vlapl_rho, v3c)  
   call xc_f90_func_end(xc_func)
-
-  sc = sc * rho
+  sc = sc * rho !E_x = rho\epsilon_x(rhoup,rhodw,grhoup,grhodw,tauup,taudw)
   v2c = v2c*2.0_dp
   v3c = v3c*0.5_dp
 
@@ -1499,5 +1513,287 @@ subroutine SCANcxc(rho, grho, tau, sx, sc, v1x, v2x, v3x, v1c, v2c, v3c)
   call errore('SCAN meta-GGA','please, recompile with LibXC trunk (i.e. >3.0.0))',1)
 #endif
 
-end subroutine SCANcxc
+end subroutine scancxc
 
+!-------------------------------------------------------------------
+subroutine scancx_spin(rhoup,rhodw,grhoup2,grhodw2,tauup,taudw,sx,&
+     v1xup,v1xdw,v2xup,v2xdw,v3xup,v3xdw)
+  !-----------------------------------------------------------------
+  !     SCAN metaGGA for spin exchange effects  - Hartree a.u.
+  !
+  USE kinds,            ONLY : DP
+#if defined(__LIBXC)
+  USE funct,            ONLY : libxc_major, libxc_minor, libxc_micro, get_libxc_version
+  use xc_f90_types_m
+  use xc_f90_lib_m
+#endif
+  implicit none  
+  real(DP), intent(in) :: rho, grho, tau
+  real(dp), intent(out):: sx, sc, v1x, v2x, v3x, v1c, v2c, v3c
+#if defined(__LIBXC)
+  TYPE(xc_f90_pointer_t) :: xc_func
+  TYPE(xc_f90_pointer_t) :: xc_info
+  integer :: size = 1
+  integer :: func_id = 202  !
+  real(dp) :: lapl_rho, vlapl_rho ! not used in SCAN
+  !
+  lapl_rho = grho
+  !     dummy arguments
+  !
+  real(DP) :: rhoup, rhodw, grhoup2, grhodw2, sx, v1xup, v1xdw, &
+       v2xup, v2xdw
+  ! up and down charge
+  ! up and down gradient of the charge
+  ! exchange and correlation energies
+  ! derivatives of exchange wr. rho
+  ! derivatives of exchange wr. grho
+  !
+  real(DP):: tauup,taudw, &! up and down kinetic energy density 
+       v3xup,v3xdw         ! derivatives of exchange wr. tau
+  real(DP) :: small  
+  parameter (small = 1.E-10_DP)  
+  real(DP) :: rho, sxup, sxdw  
+  func_id = 263  ! XC_MGGA_X_SCAN
+  !
+  ! spin exchange scaling
+  rho = rhoup + rhodw  
+  !
+  if (rhoup.gt.small.and.sqrt(abs(grhoup2)).gt.small &
+       .and. abs(tauup).gt.small) then
+     call xc_f90_func_init(xc_func, xc_info, func_id, XC_UNPOLARIZED)
+     call xc_f90_mgga_exc_vxc(xc_func, size, 2.0_DP*rhoup, 4.0_DP*grhoup2, lapl_rho, 2.0_DP*tauup,&
+                           sxup, v1xup, v2xup, vlapl_rho, v3xup)  
+     call xc_f90_func_end(xc_func)
+  else
+     sxup=0.0_DP
+     v1xup=0.0_DP
+     v2xup=0.0_DP
+     v3xup=0.0_DP
+  endif
+  if (rhodw.gt.small.and.sqrt(abs(grhodw2)).gt.small &
+       .and. abs(taudw).gt.small) then
+     call xc_f90_func_init(xc_func, xc_info, func_id, XC_UNPOLARIZED)
+     call xc_f90_mgga_exc_vxc(xc_func, size, 2.0_DP*rhodw, 4.0_DP*grhodw2, lapl_rho, 2.0_DP*taudw,&
+                           sxdw, v1xdw, v2xdw, vlapl_rho, v3xdw)  
+     call xc_f90_func_end(xc_func)
+  else
+     sxdw=0.0_DP
+     v1xdw=0.0_DP
+     v2xdw=0.0_DP
+     v3xdw=0.0_DP
+  endif
+  !spin exchange scaling
+  !
+  sx=0.5_DP*(sxup+sxdw)
+  v2xup=2.0_DP*v2xup
+  v2xdw=2.0_DP*v2xdw
+  !
+  return  
+end subroutine scancx_spin
+!
+!-------------------------------------------------------------------------
+!    spin correlation effects are not found, please add if necessary
+!    for all intents and purposes, use the TPSS spin correlation effects,
+!    which is just perdew-wang lda-spin and pbe-spin correlations.
+!
+!                       END of SCAN
+!=========================================================================
+!
+!                       mBEEF meta-GGA
+!=========================================================================
+subroutine mbeefcxc(rho, grho, tau, sx, sc, v1x, v2x, v3x, v1c, v2c, v3c)
+  !-----------------------------------------------------------------------
+  !     mBEEF metaGGA corrections for exchange and correlation - Hartree a.u.
+  !
+  USE kinds,            ONLY : DP
+#if defined(__LIBXC)
+  USE funct,            ONLY : libxc_major, libxc_minor, libxc_micro, get_libxc_version
+  use xc_f90_types_m
+  use xc_f90_lib_m
+#endif
+  implicit none  
+  real(DP), intent(in) :: rho, grho, tau
+  real(dp), intent(out):: sx, sc, v1x, v2x, v3x, v1c, v2c, v3c
+
+#if defined(__LIBXC)
+  TYPE(xc_f90_pointer_t) :: xc_func
+  TYPE(xc_f90_pointer_t) :: xc_info
+  integer, SAVE :: major=0, minor=0, micro=0
+  integer :: size = 1
+  integer :: func_id
+  real(dp) :: lapl_rho, vlapl_rho ! not used?
+
+  if (libxc_major == 0) call get_libxc_version
+  if (libxc_major < 3 .or. (libxc_major == 3 .and. libxc_minor /= -1)) & 
+      call errore('mBEEF meta-GGA','please, recompile with LibXC trunk (i.e. >3.0.0))',1)
+ 
+  lapl_rho = grho
+
+  if .not. (dft_is_nonlocc ()) then
+     ! exchange
+     func_id = 249  ! XC_MGGA_X_MBEEF
+     call xc_f90_func_init(xc_func, xc_info, func_id, XC_UNPOLARIZED)
+     call xc_f90_mgga_exc_vxc(xc_func, size, rho, grho, lapl_rho, 0.5_dp*tau,&
+                           sx, v1x, v2x, vlapl_rho, v3x)  
+     call xc_f90_func_end(xc_func)
+     sx = sx * rho
+     v2x = v2x*2.0_dp
+     v3x = v3x*0.5_dp
+     !
+     ! correlation for MBEEF is PBESOL  
+     !
+     func_id = 133  ! XC_GGA_C_PBE_SOL
+     call xc_f90_func_init(xc_func, xc_info, func_id, XC_UNPOLARIZED)    
+     call xc_f90_gga_exc_vxc(xc_func, size, rho, grho, sc, v1c, v2c)  
+     call xc_f90_func_end(xc_func)
+     sc = sc * rho !E_x = rho\epsilon_x(rhoup,rhodw,grhoup,grhodw,tauup,taudw)
+     v2c = v2c*2.0_dp
+     !v3c = v3c*0.5_dp
+  else
+     ! exchange
+     func_id = 250  ! XC_MGGA_X_MBEEFVDW
+     call xc_f90_func_init(xc_func, xc_info, func_id, XC_UNPOLARIZED)
+     call xc_f90_mgga_exc_vxc(xc_func, size, rho, grho, lapl_rho, 0.5_dp*tau,&
+                           sx, v1x, v2x, vlapl_rho, v3x)  
+     call xc_f90_func_end(xc_func)
+     sx = sx * rho
+     v2x = v2x*2.0_dp
+     v3x = v3x*0.5_dp
+     !
+     ! mBEEF-VDW's correlation is a mix of 
+     !0.600166476948828631066*LDA_PW+0.399833523051171368934*GGA_PBESOL
+     !
+     func_id = 12  ! XC_LDA_C_PW
+     call xc_f90_func_init(xc_func, xc_info, func_id, XC_UNPOLARIZED)    
+     call xc_f90_lda_exc_vxc(xc_func, size, rho ,sc, v1c)  
+     call xc_f90_func_end(xc_func) 
+     sc = sc * rho !E_x = rho\epsilon_x(rhoup,rhodw,grhoup,grhodw,tauup,taudw)
+     !v2c = v2c*2.0_dp
+     !v3c = v3c*0.5_dp     
+     func_id = 133  ! XC_GGA_C_PBE_SOL
+     call xc_f90_func_init(xc_func, xc_info, func_id, XC_UNPOLARIZED)    
+     call xc_f90_gga_exc_vxc(xc_func, size, rho, grho, sc, v1c, v2c)  
+     call xc_f90_func_end(xc_func)
+     sc = sc * rho !E_x = rho\epsilon_x(rhoup,rhodw,grhoup,grhodw,tauup,taudw)
+     
+     v2c = v2c*2.0_dp
+     !v3c = v3c*0.5_dp
+     
+  end if
+     
+#else
+  sx=0.0_dp; sc=0.0_dp; v1x=0.0_dp; v2x=0.0_dp; v3x=0.0_dp; v1c=0.0_dp; v2c=0.0_dp; v3c=0.0_dp
+  call errore('mBEEF meta-GGA','please, recompile with LibXC trunk (i.e. >3.0.0))',1)
+#endif
+
+end subroutine mbeefcxc
+!-----------------------------------------------------------------------
+subroutine mbeefcx_spin(rhoup,rhodw,grhoup2,grhodw2,tauup,taudw,sx,&
+     v1xup,v1xdw,v2xup,v2xdw,v3xup,v3xdw)
+  !-----------------------------------------------------------------------
+  !     mBEEF metaGGA exchange corrections with spin - Hartree a.u.
+  !
+  USE kinds,            ONLY : DP
+#if defined(__LIBXC)
+  USE funct,            ONLY : libxc_major, libxc_minor, libxc_micro, get_libxc_version
+  use xc_f90_types_m
+  use xc_f90_lib_m
+#endif
+  implicit none  
+  real(DP), intent(in) :: rho, grho, tau
+  real(dp), intent(out):: sx, sc, v1x, v2x, v3x, v1c, v2c, v3c
+#if defined(__LIBXC)
+  TYPE(xc_f90_pointer_t) :: xc_func
+  TYPE(xc_f90_pointer_t) :: xc_info
+  integer :: size = 1
+  integer :: func_id = 202  !
+  real(dp) :: lapl_rho, vlapl_rho ! not used in SCAN
+  !
+  lapl_rho = grho
+  !     dummy arguments
+  !
+  real(DP) :: rhoup, rhodw, grhoup2, grhodw2, sx, v1xup, v1xdw, &
+       v2xup, v2xdw
+  ! up and down charge
+  ! up and down gradient of the charge
+  ! exchange and correlation energies
+  ! derivatives of exchange wr. rho
+  ! derivatives of exchange wr. grho
+  !
+  real(DP):: tauup,taudw, &! up and down kinetic energy density 
+       v3xup,v3xdw         ! derivatives of exchange wr. tau
+  real(DP) :: small  
+  parameter (small = 1.E-10_DP)  
+  real(DP) :: rho, sxup, sxdw  
+  !
+  ! spin exchange scaling
+  rho = rhoup + rhodw
+  !
+  if .not. (dft_is_nonlocc ()) then
+     func_id = 249  ! XC_MGGA_X_MBEEF
+     if (rhoup.gt.small.and.sqrt(abs(grhoup2)).gt.small &
+          .and. abs(tauup).gt.small) then
+        call xc_f90_func_init(xc_func, xc_info, func_id, XC_UNPOLARIZED)
+        call xc_f90_mgga_exc_vxc(xc_func, size, 2.0_DP*rhoup, 4.0_DP*grhoup2, lapl_rho, 2.0_DP*tauup,&
+                              sxup, v1xup, v2xup, vlapl_rho, v3xup)  
+        call xc_f90_func_end(xc_func)
+     else
+        sxup=0.0_DP
+        v1xup=0.0_DP
+        v2xup=0.0_DP
+        v3xup=0.0_DP
+     endif
+     if (rhodw.gt.small.and.sqrt(abs(grhodw2)).gt.small &
+          .and. abs(taudw).gt.small) then
+        call xc_f90_func_init(xc_func, xc_info, func_id, XC_UNPOLARIZED)
+        call xc_f90_mgga_exc_vxc(xc_func, size, 2.0_DP*rhodw, 4.0_DP*grhodw2, lapl_rho, 2.0_DP*taudw,&
+                              sxdw, v1xdw, v2xdw, vlapl_rho, v3xdw)  
+        call xc_f90_func_end(xc_func)
+     else
+        sxdw=0.0_DP
+        v1xdw=0.0_DP
+        v2xdw=0.0_DP
+        v3xdw=0.0_DP
+     endif
+     sx=0.5_DP*(sxup+sxdw)
+     v2xup=2.0_DP*v2xup
+     v2xdw=2.0_DP*v2xdw
+  else
+     func_id = 250  ! XC_MGGA_X_MBEEFVDW
+     if (rhoup.gt.small.and.sqrt(abs(grhoup2)).gt.small &
+          .and. abs(tauup).gt.small) then
+        call xc_f90_func_init(xc_func, xc_info, func_id, XC_UNPOLARIZED)
+        call xc_f90_mgga_exc_vxc(xc_func, size, 2.0_DP*rhoup, 4.0_DP*grhoup2, lapl_rho, 2.0_DP*tauup,&
+                              sxup, v1xup, v2xup, vlapl_rho, v3xup)  
+        call xc_f90_func_end(xc_func)
+     else
+        sxup=0.0_DP
+        v1xup=0.0_DP
+        v2xup=0.0_DP
+        v3xup=0.0_DP
+     endif
+     if (rhodw.gt.small.and.sqrt(abs(grhodw2)).gt.small &
+          .and. abs(taudw).gt.small) then
+        call xc_f90_func_init(xc_func, xc_info, func_id, XC_UNPOLARIZED)
+        call xc_f90_mgga_exc_vxc(xc_func, size, 2.0_DP*rhodw, 4.0_DP*grhodw2, lapl_rho, 2.0_DP*taudw,&
+                              sxdw, v1xdw, v2xdw, vlapl_rho, v3xdw)  
+        call xc_f90_func_end(xc_func)
+     else
+        sxdw=0.0_DP
+        v1xdw=0.0_DP
+        v2xdw=0.0_DP
+        v3xdw=0.0_DP
+     endif
+     sx=0.5_DP*(sxup+sxdw)
+     v2xup=2.0_DP*v2xup
+     v2xdw=2.0_DP*v2xdw
+  end if
+  !
+  return  
+end subroutine mbeefcx_spin
+!
+!-------------------------------------------------------------------------
+!
+!
+!                       END of mBEEF
+!=========================================================================
