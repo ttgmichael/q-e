@@ -611,12 +611,8 @@ CONTAINS
        if (LEN_TRIM(dftout) .EQ. 4) then
           dft_defined = set_dft_values(0,0,0,0,0,5)
        else
-          select case(TRIM(dftout(5:9)))
-             case('-VV10')
-                dft_defined = set_dft_values(0,0,0,0,3,5)
-             case default
-                call errore('set_dft_from_name','unusual/unimplemented SCAN suffix',1)
-          end select
+          if ( INDEX(TRIM(dftout(5:)), '-VV10', .FALSE) .EQ. 1) &
+             dft_defined = set_dft_values(0,0,0,0,3,5)
        endif
        
     ! Special case : mBEEF Meta GGA
@@ -624,12 +620,8 @@ CONTAINS
        if (LEN_TRIM(dftout) .EQ. 5) then
           dft_defined = set_dft_values(0,0,0,0,0,6)
        else
-          select case(TRIM(dftout(6:9)))
-             case('-VDW')
-                dft_defined = set_dft_values(0,0,0,0,2,6)
-             case default
-                call errore('set_dft_from_name','unusual/unimplemented mBEEF suffix',1)
-          end select
+          if ( INDEX(TRIM(dftout(5:)), '-VDW', .FALSE) .EQ. 1) &
+             dft_defined = set_dft_values(0,0,0,0,2,6)
        endif
        
     ! Special case : PZ/LDA + null meta-GGA
