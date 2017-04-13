@@ -133,8 +133,6 @@ SUBROUTINE setup()
            'Meta-GGA with USPP/PAW requires explicit xc function call with USPP/PAW in name', 1 )
         end if
      END IF
-     IF ( dft_is_meta() ) .and. (dft_is_uspppaw()) CALL infomsg ('setup',&
-        'Warning: Meta-GGA not fully tested with USPP/PAW, use with caution')
      IF ( noncolin .AND. lberry)  CALL errore( 'setup', &
         'Noncolinear Berry Phase/electric not implemented with USPP/PAW', 1 )
      IF  (ts_vdw ) CALL errore ('setup',&
