@@ -2725,10 +2725,11 @@ subroutine tau_xc_spin (rhoup, rhodw, grhoup, grhodw, tauup, taudw, ex, ec,   &
   real(dp)                :: rh, zeta, atau, grhoup2, grhodw2
   real(dp), parameter     :: epsr=1.0d-08, zero=0._dp
   !
-  real(dp), dimension(3)  :: grho_vec !for mBEEF
-  real(dp)                :: grho2, v2c !for mBEEF
-  real(dp)                :: ec_lda,v1cup_lda,v1cdw_lda !for mBEEF-vdw's LDA portion
-  real(dp)                :: ec_gga, v1cup_gga, v1cdw_gga, !for mBEEF-vdw's GCC portion
+  real(dp), dimension(3), intent(in)  :: grho_vec !for mBEEF
+  real(dp), intent(in)    :: grho2, !for mBEEF
+  real(dp), intent(out)   :: v2c !for mBEEF
+  real(dp), intent(out)   :: ec_lda,v1cup_lda,v1cdw_lda !for mBEEF-vdw's LDA portion
+  real(dp), intent(out)   :: ec_gga, v1cup_gga, v1cdw_gga, !for mBEEF-vdw's GCC portion
   real(dp), parameter     :: lda_coeff=0.600166476948828631066, gga_coeff=0.399833523051171368934
   !
   !_____________________________
