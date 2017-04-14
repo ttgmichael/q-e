@@ -90,7 +90,7 @@ SUBROUTINE setup()
   USE qes_types_module,   ONLY : output_type, parallel_info_type, general_info_type 
 #endif
   USE exx,                ONLY : ecutfock, exx_grid_init, exx_mp_init, exx_div_check
-  USE funct,              ONLY : dft_is_meta, dft_is_hybrid, dft_is_gradient, dft_is_uspppaw
+  USE funct,              ONLY : dft_is_meta, dft_is_hybrid, dft_is_gradient, get_dft_name
   USE paw_variables,      ONLY : okpaw
   USE fcp_variables,      ONLY : lfcpopt, lfcpdyn
   USE extfield,           ONLY : monopole
@@ -127,7 +127,7 @@ SUBROUTINE setup()
   IF ( okvan .OR. okpaw ) THEN
      IF ( dft_is_meta() ) THEN
         dftname = get_dft_name()
-        if (INDEX(dftname,'USPP') .OR. INDEX(dftname,'PAW')) then 
+        if ( INDEX(dftname,'USPP').EQ.1 .OR. INDEX(dftname,'PAW').EQ.1 ) then 
            CALL infomsg ('setup',&
            'Warning: Meta-GGA not fully tested with USPP/PAW, use with caution')
         else 
