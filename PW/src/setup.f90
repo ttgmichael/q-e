@@ -127,7 +127,7 @@ SUBROUTINE setup()
   IF ( okvan .OR. okpaw ) THEN
      IF ( dft_is_meta() ) THEN
         dftname = get_dft_name()
-        if ( INDEX(dftname,'USPP').EQ.1 .OR. INDEX(dftname,'PAW').EQ.1 ) then 
+        if ( INDEX(dftname,'USPP').gt.0 .OR. INDEX(dftname,'PAW').gt.0 ) then 
            CALL infomsg ('setup',&
            'Warning: Meta-GGA not fully tested with USPP/PAW, use with caution')
         else 
