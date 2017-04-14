@@ -100,6 +100,7 @@ SUBROUTINE setup()
   INTEGER  :: na, is, ierr, ibnd, ik
   LOGICAL  :: magnetic_sym, skip_equivalence=.FALSE.
   REAL(DP) :: iocc, ionic_charge, one
+  character (len=50) :: dftname
   !
   LOGICAL, EXTERNAL  :: check_para_diag
 !
@@ -125,7 +126,8 @@ SUBROUTINE setup()
   !
   IF ( okvan .OR. okpaw ) THEN
      IF ( dft_is_meta() ) THEN
-        if (dft_is_uspppaw()) then 
+        dftname = get_dft_name()
+        if (INDEX(dftname,'USPP') .OR. INDEX(dftname,'PAW')) then 
            CALL infomsg ('setup',&
            'Warning: Meta-GGA not fully tested with USPP/PAW, use with caution')
         else 

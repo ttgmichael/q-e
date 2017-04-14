@@ -49,7 +49,7 @@ module funct
   PUBLIC  :: get_dft_name, get_dft_short, get_dft_long,&
              get_nonlocc_name
   PUBLIC  :: get_iexch, get_icorr, get_igcx, get_igcc, get_meta, get_inlc
-  PUBLIC  :: dft_is_gradient, dft_is_meta, dft_is_hybrid, dft_is_uspppaw, dft_is_nonlocc, igcc_is_lyp
+  PUBLIC  :: dft_is_gradient, dft_is_meta, dft_is_hybrid, dft_is_nonlocc, igcc_is_lyp
 
   ! additional subroutines/functions for hybrid functionals
   PUBLIC  :: start_exx, stop_exx, get_exx_fraction, exx_is_active
@@ -75,7 +75,7 @@ module funct
   !
   PRIVATE :: dft, iexch, icorr, igcx, igcc, imeta, inlc
   PRIVATE :: discard_input_dft
-  PRIVATE :: isgradient, ismeta, ishybrid, isuspppaw
+  PRIVATE :: isgradient, ismeta, ishybrid
   PRIVATE :: exx_fraction, exx_started
   PRIVATE :: has_finite_size_correction, &
              finite_size_cell_volume,  finite_size_cell_volume_set 
@@ -315,7 +315,6 @@ module funct
   logical :: isgradient  = .false.
   logical :: ismeta      = .false.
   logical :: ishybrid    = .false.
-  logical :: isuspppaw   = .false.
   logical :: isnonlocc   = .false.
   logical :: exx_started = .false.
   logical :: has_finite_size_correction = .false.
@@ -769,9 +768,6 @@ CONTAINS
     !
     ishybrid = ( exx_fraction /= 0.0_DP )
     !
-    ! FORCE USPP/PAW with Meta-GGA
-    isuspppaw = ( INDEX(dft, 'USPP', .FALSE.) .EQ. 1) .or. ( INDEX(dft, 'PAW', .FALSE.) .EQ. 1)
-
     has_finite_size_correction = ( iexch==8 .or. icorr==10)
 
     return
@@ -985,14 +981,6 @@ CONTAINS
     dft_is_hybrid = ishybrid
     return
   end function dft_is_hybrid
-  !-----------------------------------------------------------------------
-  ! forces QE to use USPP/PAW for metaGGAs
-  ! only set when XC explicitly has 'USPP' or 'PAW' in its name
-  function dft_is_uspppaw ()
-    logical :: dft_is_uspppaw
-    dft_is_uspppaw = isuspppaw
-    return
-  end function dft_is_uspppaw
   !-----------------------------------------------------------------------
   function igcc_is_lyp ()
     logical :: igcc_is_lyp
