@@ -1586,7 +1586,7 @@ subroutine scancx_spin(rhoup,rhodw,grhoup2,grhodw2,tauup,taudw,sx,&
   v2xdw=2.0_DP*v2xdw
   !
 #else
-  sx=0.0_dp; sc=0.0_dp; v1x=0.0_dp; v2x=0.0_dp; v3x=0.0_dp; v1c=0.0_dp; v2c=0.0_dp; v3c=0.0_dp
+  sx=0.0_DP; v1xup=0.0_DP; v1xdw=0.0_DP; v2xup=0.0_DP; v2xdw=0.0_DP; v3xup=0.0_DP; v3xdw=0.0_DP
   call errore('tb09','need libxc',1)
 #endif  
   return  
@@ -1790,7 +1790,7 @@ subroutine mbeefcx_spin(rhoup,rhodw,grhoup2,grhodw2,tauup,taudw,sx,&
   end if
   !
 #else
-  sx=0.0_dp; sc=0.0_dp; v1x=0.0_dp; v2x=0.0_dp; v3x=0.0_dp; v1c=0.0_dp; v2c=0.0_dp; v3c=0.0_dp
+  sx=0.0_DP; v1xup=0.0_DP; v1xdw=0.0_DP; v2xup=0.0_DP; v2xdw=0.0_DP; v3xup=0.0_DP; v3xdw=0.0_DP
   call errore('tb09','need libxc',1)
 #endif
 
