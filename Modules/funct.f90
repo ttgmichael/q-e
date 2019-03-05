@@ -37,7 +37,7 @@ module funct
 !  derivatives of XC computation drivers: dmxc, dmxc_spin, dmxc_nc, dgcxc,
 !                                         dgcxc_spin
 !
-  USE io_global, ONLY: stdout
+  USE io_global, ONLY: stdout, ionode
   USE kinds,     ONLY: DP
   IMPLICIT NONE
   PRIVATE
@@ -194,6 +194,8 @@ module funct
   !              "r860"   rPW86+HF/4 (rw86-0)            igcx =30 reserved PH
   !              "br0"    vdW-DF2-b86r+HF/4 (b86r-0)     igcx =38 reserved PH 
   !              "c090"   vdW-DF-c09+HF/4 (c09-0)        igcx =40 reserved PH 
+  !              "beex"   BEE exchange                   igcx =41
+  !              "rxpb"   RPBE exchange                  igcx =42
   !
   ! Gradient Correction on Correlation:
   !              "nogc"   none                           igcc =0 (default)
@@ -207,6 +209,7 @@ module funct
   !              "pbe"    same as PBX, back-comp.        igcc =9
   !              "q2dc"   Q2D correlation grad corr      igcc =12
   !              "x3lp"   X3LYP (Lee-Yang-Parr*0.871)    igcc =13
+  !              "beec"   BEE correlation                igcc =14
   !
   ! Meta-GGA functionals
   !              "tpss"   TPSS Meta-GGA                  imeta=1
@@ -322,8 +325,15 @@ module funct
   logical :: finite_size_cell_volume_set = .false.
   real(DP):: finite_size_cell_volume = notset
   logical :: discard_input_dft = .false.
+
+#ifdef use_beef
+  integer :: beeftype = -1
+  logical, external :: beef_set_type
+  integer :: beefvdw = 0
+#endif
   !
-  integer, parameter:: nxc=8, ncc=10, ngcx=40, ngcc=12, nmeta=6, ncnl=6
+  integer, parameter:: nxc=8, ncc=10, ngcx=42, ngcc=14, nmeta=6, ncnl=6
+
   character (len=4) :: exc, corr, gradx, gradc, meta, nonlocc
   dimension :: exc (0:nxc), corr (0:ncc), gradx (0:ngcx), gradc (0:ngcc), &
                meta(0:nmeta), nonlocc (0:ncnl)
@@ -337,10 +347,11 @@ module funct
                'xxxx', 'C09X', 'SOX', 'xxxx', 'Q2DX', 'GAUP', 'PW86', 'B86B', &
                'OBK8', 'OB86', 'EVX', 'B86R', 'CX13', 'X3LP', & 
                'CX0', 'R860', 'xxxx', 'xxxx', 'xxxx', &
-               'xxxx', 'xxxx', 'xxxx', 'xxxx', 'BR0', 'xxxx', 'C090' /
+               'xxxx', 'xxxx', 'xxxx', 'xxxx', 'BR0', 'xxxx', 'C090', 'BEEX', 'RXPB'  /
 
   data gradc / 'NOGC', 'P86', 'GGC', 'BLYP', 'PBC', 'HCTH', 'NONE',&
-               'B3LP', 'PSC', 'PBE', 'xxxx', 'xxxx', 'Q2DC' / 
+               'B3LP', 'PSC', 'PBE', 'xxxx', 'xxxx', 'Q2DC', 'X3LP',&
+               'BEEC' / 
 
   data meta  / 'NONE', 'TPSS', 'M06L', 'TB09', 'META', 'SCAN', 'SCA0' / 
 
@@ -483,10 +494,9 @@ CONTAINS
     else if ( 'EV93' .EQ. TRIM(dftout) ) THEN
        dft_defined = set_dft_values(1,4,25,0,0,0)
 
-    else if ('RPBE' .EQ. TRIM(dftout) ) then
     ! special case : RPBE
-         call errore('set_dft_from_name', &
-     &   'RPBE (Hammer-Hansen-Norskov) not implemented (revPBE is)',1)
+    else if ('RPBE' .EQ. TRIM(dftout) ) then
+       dft_defined = set_dft_values(1,4,42,4,0,0)
      
     else if ('PBE0'.EQ. TRIM(dftout) ) then
     ! special case : PBE0
@@ -499,6 +509,34 @@ CONTAINS
    else if ( 'GAUP' .EQ. TRIM(dftout) .OR. 'GAUPBE' .EQ. TRIM(dftout) ) then
     ! special case : GAUPBE
        dft_defined = set_dft_values(1,4,20,4,0,0)
+
+   else if ( INDEX(dftout, 'BEEF', .FALSE.) .EQ. 1) then
+   ! Special case BEEF (default: BEEF-vdW-DF2)
+#ifdef use_beef
+       if (LEN_TRIM(dftout) .EQ. 4) then
+          beeftype = 0
+       else
+          select case(TRIM(dftout(5:)))
+             case('-VDW')
+                beeftype = 0
+             case default
+                READ(dftout(5:), '(i9)', IOSTAT=i) beeftype
+                if (i.ne.0) call errore('set_dft_from_name', &
+                & 'unknown BEEF type', 1)
+          end select
+       endif
+       if (.not. beef_set_type(beeftype, ionode)) &
+       & call errore('set_dft_from_name', 'unknown BEEF type number', 1)
+       select case(beeftype)
+          case(0)
+             ! turn on vdW-DF2 type interactions for BEEF-vdW
+             beefvdw = 2
+       end select
+       dft_defined = set_dft_values(1,4,41,14,beefvdw,0)
+#else
+       call errore('set_dft_from_name', &
+    &    'BEEF xc functional support not compiled in', 1)
+#endif
        
     else if ('VDW-DF' .EQ. TRIM(dftout)) then
     ! Special case vdW-DF
@@ -1097,6 +1135,10 @@ CONTAINS
      shortname = 'EV93'
   else if (iexch==5.and.icorr==0.and.igcx==0.and.igcc==0) then
      shortname = 'HF'
+  else if (iexch==1.and.icorr==4.and.igcx==41.and.igcc==14.and.inlc==2) then
+     shortname = 'BEEF'
+  else if (iexch==1.and.icorr==4.and.igcx==42.and.igcc==4) then
+     shortname = 'RPBE'
   end if
 
   if (imeta == 1 ) then
@@ -1636,6 +1678,7 @@ subroutine gcxc (rho, grho, sx, sc, v1x, v2x, v1c, v2c)
         v1x = v1x + real(0.235*0.709) * v1x__
         v2x = v2x + real(0.235*0.709) * v2x__
      end if
+<<<<<<< HEAD
   elseif (igcx == 29) then ! 'cx0'
      call cx13 (rho, grho, sx, v1x, v2x)
      if (exx_started) then
@@ -1664,6 +1707,14 @@ subroutine gcxc (rho, grho, sx, sc, v1x, v2x, v1c, v2c)
         v1x = (1.0_DP - exx_fraction) * v1x
         v2x = (1.0_DP - exx_fraction) * v2x
      end if
+#ifdef use_beef
+  elseif (igcx == 41) then ! 'beefx'
+     ! last parameter = 0 means do not add LDA (=Slater) exchange
+     ! (espresso will add it itself)
+     call beefx(rho, grho, sx, v1x, v2x, 0)
+#endif
+  elseif (igcx == 42) then ! 'rpbe'
+     call pbex (rho, grho, 8, sx, v1x, v2x)
   else
      sx = 0.0_DP
      v1x = 0.0_DP
@@ -1705,6 +1756,12 @@ subroutine gcxc (rho, grho, sx, sc, v1x, v2x, v1c, v2c)
         v1c = 0.871_DP * v1c
         v2c = 0.871_DP * v2c
      end if
+#ifdef use_beef
+  elseif (igcc == 14) then !'BEEF'
+    ! last parameter 0 means: do not add lda contributions
+    ! (espresso will do that itself)
+    call beeflocalcorr(rho, grho, sc, v1c, v2c, 0)
+#endif
   else
      sc = 0.0_DP
      v1c = 0.0_DP
@@ -1782,9 +1839,11 @@ subroutine gcx_spin (rhoup, rhodw, grhoup2, grhodw2, &
      v2xup = 2.0_DP * v2xup
      v2xdw = 2.0_DP * v2xdw
   elseif (igcx == 3 .or. igcx == 4 .or. igcx == 8 .or. igcx ==10 .or. &
-          igcx ==12 .or. igcx ==20 .or. igcx ==23 .or. igcx ==24 .or. igcx == 25) then
+          igcx ==12 .or. igcx ==20 .or. igcx ==23 .or. igcx ==24 .or. &
+          igcx == 25 .or. igcx == 30) then
      ! igcx=3: PBE, igcx=4: revised PBE, igcx=8: PBE0, igcx=10: PBEsol
      ! igcx=12: HSE,  igcx=20: gau-pbe, igcx=23: obk8, igcx=24: ob86, igcx=25: ev93
+     ! igcx=30: RPBE
      if (igcx == 4) then
         iflag = 2
      elseif (igcx == 10) then
@@ -1795,6 +1854,8 @@ subroutine gcx_spin (rhoup, rhodw, grhoup2, grhodw2, &
         iflag = 6
      elseif (igcx == 25) then
         iflag = 7
+     elseif (igcx == 30) then
+        iflag = 8
      else
         iflag = 1
      endif
@@ -2011,7 +2072,6 @@ subroutine gcx_spin (rhoup, rhodw, grhoup2, grhodw2, &
         sxup = 0.0_DP
         v1xup = 0.0_DP
         v2xup = 0.0_DP
-     endif
      if (rhodw > small .and. sqrt (abs (grhodw2) ) > small) then
         call cx13 (2.0_DP * rhodw, 4.0_DP * grhodw2, sxdw, v1xdw, v2xdw)
      else
@@ -2029,6 +2089,27 @@ subroutine gcx_spin (rhoup, rhodw, grhoup2, grhodw2, &
         v2xup = (1.0_DP - exx_fraction) * v2xup
         v2xdw = (1.0_DP - exx_fraction) * v2xdw
      end if
+
+#ifdef use_beef
+  elseif (igcx == 41) then !beefx
+     if (rhoup > small .and. sqrt (abs (grhoup2) ) > small) then
+        call beefx(2.0_DP * rhoup, 4.0_DP * grhoup2, sxup, v1xup, v2xup, 0)
+     else
+        sxup = 0.0_DP
+        v1xup = 0.0_DP
+        v2xup = 0.0_DP
+     endif
+     if (rhodw > small .and. sqrt (abs (grhodw2) ) > small) then
+        call beefx(2.0_DP * rhodw, 4.0_DP * grhodw2, sxdw, v1xdw, v2xdw, 0)
+     else
+        sxdw = 0.0_DP
+        v1xdw = 0.0_DP
+        v2xdw = 0.0_DP
+     endif
+     sx = 0.5_DP * (sxup + sxdw)
+     v2xup = 2.0_DP * v2xup
+     v2xdw = 2.0_DP * v2xdw
+#endif
 
   elseif (igcx == 30) then ! 'R860' = 'rPW86-0' for vdw-df2-0' 
      if (rhoup > small .and. sqrt (abs (grhoup2) ) > small) then
@@ -2107,6 +2188,7 @@ subroutine gcx_spin (rhoup, rhodw, grhoup2, grhodw2, &
         v2xup = (1.0_DP - exx_fraction) * v2xup
         v2xdw = (1.0_DP - exx_fraction) * v2xdw
      end if
+
 
   ! case igcx == 5 (HCTH) and 6 (OPTX) not implemented
   ! case igcx == 7 (meta-GGA) must be treated in a separate call to another
@@ -2196,15 +2278,17 @@ subroutine gcx_spin_vec(rhoup, rhodw, grhoup2, grhodw2, &
      sx = 0.5_DP * (sxup + sxdw)
      v2xup = 2.0_DP * v2xup
      v2xdw = 2.0_DP * v2xdw
-  case(3,4,8,10,12,25)
+  case(3,4,8,10,12,25,30)
      ! igcx=3: PBE, igcx=4: revised PBE, igcx=8 PBE0, igcx=10: PBEsol, 
-     ! igcx=25: EV93
+     ! igcx=25: EV93, igcx=30: RPBE
      if (igcx == 4) then
         iflag = 2
      elseif (igcx == 10) then
         iflag = 3
      elseif (igcx == 25) then
         iflag = 7
+     elseif (igcx == 30) then
+        iflag = 8
      else
         iflag = 1
      endif
@@ -2417,8 +2501,8 @@ subroutine gcx_spin_vec(rhoup, rhodw, grhoup2, grhodw2, &
            v1xup(i) = 0.0_DP
            v2xup(i) = 0.0_DP
         endif
-        if (rhodw(i) > small .and. sqrt(abs(grhodw2(i))) > small) then
-           call cx13 (2.0_DP * rhodw(i), 4.0_DP * grhodw2(i), sxdw(i), v1xdw(i), v2xdw(i))
+        if (rhodw(i) > small .and. sqrt(abs(grhodw2(i))) > small) then=
+           call cx13 (2.0_DP * rhodw(i), 4.0_DP * grhodw2(i), sxdw(i), v1xdw(i), v2xdw(i), 0)
         else
            sxdw(i) = 0.0_DP
            v1xdw(i) = 0.0_DP
@@ -2435,6 +2519,29 @@ subroutine gcx_spin_vec(rhoup, rhodw, grhoup2, grhodw2, &
         v2xup = (1.0_DP - exx_fraction) * v2xup
         v2xdw = (1.0_DP - exx_fraction) * v2xdw
      end if
+
+#ifdef use_beef
+  case(41) ! beefx
+     do i=1,length
+        if (rhoup(i) > small .and. sqrt(abs(grhoup2(i))) > small) then
+           call beefx(2.0_DP * rhoup(i), 4.0_DP * grhoup2(i), sxup(i), v1xup(i), v2xup(i), 0)
+        else
+           sxup(i) = 0.0_DP
+           v1xup(i) = 0.0_DP
+           v2xup(i) = 0.0_DP
+        endif
+        if (rhodw(i) > small .and. sqrt(abs(grhodw2(i))) > small) then=
+           call beefx(2.0_DP * rhodw(i), 4.0_DP * grhodw2(i), sxdw(i), v1xdw(i), v2xdw(i), 0)
+        else
+           sxdw(i) = 0.0_DP
+           v1xdw(i) = 0.0_DP
+           v2xdw(i) = 0.0_DP
+        endif
+     end do
+     sx = 0.5_DP * (sxup + sxdw)
+     v2xup = 2.0_DP * v2xup
+     v2xdw = 2.0_DP * v2xdw
+#endif
 
   case(30)  ! 'R860' = 'rPW86-0' for vdw-df2-0' 
      do i=1,length
@@ -2581,6 +2688,10 @@ subroutine gcc_spin (rho, zeta, grho, sc, v1cup, v1cdw, v2c)
      call pbec_spin (rho, zeta, grho, 1, sc, v1cup, v1cdw, v2c)
   elseif (igcc == 8) then
      call pbec_spin (rho, zeta, grho, 2, sc, v1cup, v1cdw, v2c)
+#ifdef use_beef
+  elseif (igcc == 14) then !beefc
+     call beeflocalcorrspin(rho, zeta, grho, sc, v1cup, v1cdw, v2c, 0)
+#endif
   else
      call errore ('lsda_functionals (gcc_spin)', 'not implemented', igcc)
   endif

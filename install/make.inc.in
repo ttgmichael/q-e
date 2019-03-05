@@ -153,6 +153,11 @@ MPI_LIBS       = @mpi_libs@
 
 MASS_LIBS      = @mass_libs@
 
+# library for bayesian error estimate functionals
+
+BEEF_LIBS      = @beef_libs@
+
+
 # ar command and flags - for most architectures: AR = ar, ARFLAGS = ruv
 
 AR             = @ar@
@@ -168,7 +173,7 @@ RANLIB         = @ranlib@
 FLIB_TARGETS   = all
 
 LIBOBJS        = $(TOPDIR)/clib/clib.a  $(TOPDIR)/iotk/src/libiotk.a
-LIBS           = $(SCALAPACK_LIBS) $(LAPACK_LIBS) $(FOX_LIB) $(FFT_LIBS) $(BLAS_LIBS) $(MPI_LIBS) $(MASS_LIBS) $(HDF5_LIB)  $(LD_LIBS)
+LIBS           = $(SCALAPACK_LIBS) $(LAPACK_LIBS) $(FOX_LIB) $(FFT_LIBS) $(BLAS_LIBS) $(MPI_LIBS) $(MASS_LIBS) $(BEEF_LIBS) $(HDF5_LIB)  $(LD_LIBS)
 
 # wget or curl - useful to download from network
 WGET = @wget@

@@ -1078,6 +1078,7 @@ subroutine pbex (rho, grho, iflag, sx, v1x, v2x)
            0.12345679012345679_DP,  0.22_dp, 0.1234_dp/, &
        ev / 1.647127_DP, 0.980118_DP, 0.017399_DP, 1.523671_DP, 0.367229_DP, &
                                    0.011282_DP /  ! a and b parameters of Engel and Vosko
+  if(iflag .ne. 8) then
   agrho = sqrt (grho)
   kf = c2 * rho**third
   dsg = 0.5_DP / kf
@@ -1150,6 +1151,21 @@ subroutine pbex (rho, grho, iflag, sx, v1x, v2x)
   v1x = sx + dxunif * fx + exunif * dfx * ds
   v2x = exunif * dfx * dsg / agrho
   sx = sx * rho
+  else
+        !RPBE Hammer, Hansen, Noerskov PRB 1999
+        kf = c2 * rho**third
+        sx = -0.238732414637843_DP*kf
+        f3 = 0.026121172985233605_DP / rho**(8.0_DP / 3.0_DP)
+        f2 = f3*grho
+        v1x = 4.0_DP/3.0_DP * sx
+        sx = sx*rho
+        f1 = dsqrt(f2)
+        fx = k(1) * ( 1.0_DP - dexp(-mu(1)/k(1)*f2) )
+        dfx = 2.0_DP*mu(1)*f1*dexp(-mu(1)/k(1)*f2)
+        v1x = v1x*fx -4.0_DP/3.0_DP*f2/f1/rho*sx*dfx
+        v2x = sx*dfx*f3/f1
+        sx = sx*fx
+  end if
 #endif
   return
 end subroutine pbex
@@ -1190,7 +1206,8 @@ subroutine pbex_vec (rho, grho, iflag, sx, v1x, v2x, length, small)
   data k / 0.804_dp, 1.245_dp, 0.804_dp /, &
        mu/ 0.2195149727645171_DP, 0.2195149727645171_DP, 0.12345679012345679_DP/
   !
-  do i=1,length
+  if (iflag.ne.8) then
+   do i=1,length
      if ((rho(i).gt.small).and.(grho(i).gt.small**2)) then
         agrho = sqrt(grho(i))
         kf = c2 * rho(i)**third
@@ -1216,7 +1233,29 @@ subroutine pbex_vec (rho, grho, iflag, sx, v1x, v2x, length, small)
         v2x(i) = 0.0_dp
         sx(i) = 0.0_dp
      end if
-  end do
+   end do
+  else
+   do i=1,length
+     if ((rho(i).gt.small).and.(grho(i).gt.small**2)) then
+        kf = c2 * rho(i)**third
+        sx(i) = -0.238732414637843_DP*kf
+        dsg = 0.026121172985233605_DP / rho(i)**(8.0_DP / 3.0_DP)
+        f2 = dsg * grho(i)
+        v1x(i) = 4.0_DP/3.0_DP * sx(i)
+        sx(i) = sx(i)*rho(i)
+        f1 = dsqrt(f2)
+        fx = k(1) * ( 1.0_DP - dexp(-mu(1)/k(1)*f2) )
+        dfx = 2.0_DP*mu(1)*f1*dexp(-mu(1)/k(1)*f2)
+        v1x(i) = v1x(i)*fx -4.0_DP/3.0_DP*f2/f1/rho(i)*sx(i)*dfx
+        v2x(i) = sx(i)*dfx*dsg/f1
+        sx(i) = sx(i)*fx
+     else
+        v1x(i) = 0.0_dp
+        v2x(i) = 0.0_dp
+        sx(i) = 0.0_dp
+     end if
+   end do
+  end if
 
 end subroutine pbex_vec
 !

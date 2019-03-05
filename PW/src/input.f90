@@ -167,7 +167,11 @@ SUBROUTINE iosys()
                             lkpoint_dir_      => lkpoint_dir, &
                             tqr_              => tqr, &
                             tq_smoothing_     => tq_smoothing, &
-                            tbeta_smoothing_  => tbeta_smoothing, &
+                            tbeta_smoothing_  => tbeta_smoothing, &=
+                            io_level, ethr, lscf, lbfgs, lmd, &
+                            lbands, lconstrain, restart, twfcollect, &
+                            llondon, do_makov_payne, lxdm, &
+                            lase3, &
                             ts_vdw_           => ts_vdw, &
                             lecrpa_           => lecrpa, &
                             scf_must_converge_=> scf_must_converge
@@ -384,6 +388,10 @@ SUBROUTINE iosys()
         calc    = 'vm'
         !
         ntcheck = nstep + 1
+        !
+     CASE ( 'ase3' )
+        !
+        lase3 = .true.
         !
      CASE DEFAULT
         !

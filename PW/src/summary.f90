@@ -36,7 +36,8 @@ SUBROUTINE summary()
   USE klist,           ONLY : degauss, smearing, lgauss, ltetra, nkstot, xk, &
                               wk, nelec, nelup, neldw, two_fermi_energies
   USE control_flags,   ONLY : imix, nmix, mixing_beta, nstep, lscf, &
-                              tr2, isolve, lmd, lbfgs, iverbosity, tqr, tq_smoothing, tbeta_smoothing
+                              tr2, isolve, lmd, lbfgs, iverbosity, tqr, &
+                              tq_smoothing, tbeta_smoothing, lase3
   USE noncollin_module,ONLY : noncolin
   USE spin_orb,        ONLY : domag, lspinorb
   USE funct,           ONLY : write_dft_name, dft_is_hybrid
@@ -120,7 +121,7 @@ SUBROUTINE summary()
   !
   call write_dft_name ( ) 
   !
-  IF ( lmd .OR. lbfgs ) &
+  IF ( lmd .OR. lbfgs .OR. lase3 ) &
      WRITE( stdout, '(5X,"nstep                     = ",I12,/)' ) nstep
   !
   IF (noncolin) THEN
